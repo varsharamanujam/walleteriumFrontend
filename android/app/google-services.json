@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "741700316107",
+    "project_id": "walleterium",
+    "storage_bucket": "walleterium.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:741700316107:android:4247c30acccec78752e44e",
+        "android_client_info": {
+          "package_name": "com.mycompany.walleterium"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "741700316107-5vlnqq24knque4uj72goe6lasnhkauo9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mycompany.walleterium",
+            "certificate_hash": "fdc000948662e1ad8267687081900e721b8f2dba"
+          }
+        },
+        {
+          "client_id": "741700316107-5ca2eqvpsop5d61mac2h9ufmean4eaji.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbqfKRkcvxzp2e_8mk_BxfS3RgHbh8Mm4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "741700316107-5ca2eqvpsop5d61mac2h9ufmean4eaji.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "741700316107-ki34ecno5fhvu2maba4h8ontutcjrajs.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mycompany.walleterium"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

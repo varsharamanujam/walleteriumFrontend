@@ -1,0 +1,5 @@
+# Flutter/Dart build output
+build/
+.dart_tool/
+.packages
+.pub-cache/
