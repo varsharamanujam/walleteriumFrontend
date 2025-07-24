@@ -3,7 +3,6 @@ import '/backend/backend.dart';
 import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import 'dart:async'; // Import for StreamSubscription
 import 'dart:math';
 import 'dart:ui';
@@ -16,8 +15,7 @@ import 'package:provider/provider.dart';
 import 'splashscreen_model.dart';
 export 'splashscreen_model.dart';
 import '/auth/firebase_auth/auth_util.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import for FirebaseAuth
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:walleterium/backend/schema/wallet_user_record.dart';
 
 class SplashscreenWidget extends StatefulWidget {
@@ -34,9 +32,9 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
     with TickerProviderStateMixin {
   late SplashscreenModel _model;
   late StreamSubscription<User?> _authSubscription;
+  bool _handledNavigation = false;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
-
   final animationsMap = <String, AnimationInfo>{};
 
   @override
@@ -44,50 +42,60 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
     super.initState();
     _model = createModel(context, () => SplashscreenModel());
 
+    // --- CORRECTED AUTH LOGIC ---
     _authSubscription =
-    FirebaseAuth.instance.authStateChanges().listen((user) async {
-  _authSubscription.cancel();
-  await Future.delayed(const Duration(milliseconds: 2000));
-  if (!mounted) return;
+        FirebaseAuth.instance.authStateChanges().listen((user) async {
+      // Prevent multiple navigations
+      if (_handledNavigation) return;
+      _handledNavigation = true;
 
-  if (user == null) {
-    context.goNamed(AuthHubScreenWidget.routeName);
-  } else {
-    final userDocRef = WalletUsersRecord.collection.doc(user.uid);
-    final userDocSnapshot = await userDocRef.get();
-    bool onboardingComplete = false;
-    if (userDocSnapshot.exists) {
-        // --- THIS IS A RETURNING USER ---
-        // 1. Update their last seen time.
-        await userDocRef.update({'last_seen': FieldValue.serverTimestamp()});
-        // 2. Read their onboarding status from the existing document.
-        final data = userDocSnapshot.data() as Map<String, dynamic>?;
-        onboardingComplete = data?['onboarding_completed'] ?? false;
-      } else {
-        // --- THIS IS A NEW USER ---
-        // 1. Create the data for the new user.
-        final newWalletUserData = createWalletUsersRecordData(
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoUrl: user.photoURL,
-          lastSeen: DateTime.now(),
-          onboardingCompleted: false, // 2. Set the flag to FALSE.
-        );
-        // 3. Create the document in Firestore.
-        await userDocRef.set(newWalletUserData);
-        // 4. The flag is already false, so no need to change it.
-      }
-    
-    if (!mounted) return;
+      // Give a moment for the splash screen to display
+      await Future.delayed(const Duration(milliseconds: 2000));
+      if (!mounted) return;
 
-    if (onboardingComplete) {
-        context.goNamed(MainDashWidget.routeName);
+      if (user == null) {
+        // --- NO USER LOGGED IN ---
+        context.goNamed(AuthHubScreenWidget.routeName);
       } else {
-        context.goNamed(AIConversationalOnboardingScreenWidget.routeName);
+        // --- USER IS LOGGED IN ---
+        final userDocRef = WalletUsersRecord.collection.doc(user.uid);
+        final userDocSnapshot = await userDocRef.get();
+        bool onboardingComplete = false;
+
+        if (userDocSnapshot.exists) {
+          // --- RETURNING USER ---
+          await userDocRef.update({
+            'last_seen': FieldValue.serverTimestamp(),
+            'display_name': user.displayName,
+            'photo_url': user.photoURL,
+          });
+          final data = userDocSnapshot.data() as Map<String, dynamic>?;
+          onboardingComplete = data?['onboarding_completed'] ?? false;
+        } else {
+          // --- BRAND NEW USER ---
+          final newWalletUserData = createWalletUsersRecordData(
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoUrl: user.photoURL,
+            lastSeen: DateTime.now(),
+            onboardingCompleted: false,
+          );
+          await userDocRef.set(newWalletUserData);
+          onboardingComplete = false;
+        }
+
+        if (!mounted) return;
+
+        // Route user based on onboarding status.
+        if (onboardingComplete) {
+          context.goNamed(MainDashWidget.routeName);
+        } else {
+          context.goNamed(AIConversationalOnboardingScreenWidget.routeName);
+        }
       }
-  }
-});
+    });
+    // --- END OF CORRECTION ---
 
     animationsMap.addAll({
       'containerOnPageLoadAnimation1': AnimationInfo(
@@ -178,13 +186,14 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
   @override
   void dispose() {
     _model.dispose();
+    // This is the correct place to cancel the subscription
     _authSubscription.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // The build method remains the same...
+    // The build method can remain exactly the same as before.
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
