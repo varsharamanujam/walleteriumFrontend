@@ -113,7 +113,17 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: MainDashWidget.routeName,
           path: MainDashWidget.routePath,
           builder: (context, params) => MainDashWidget(),
-        )
+        ),
+        FFRoute(
+          name: SpendingAnalyzerScreen.routeName,
+          path: SpendingAnalyzerScreen.routePath,
+          builder: (context, params) => SpendingAnalyzerScreen(),
+        ),
+        FFRoute(
+          name: WealthHubScreen.routeName,
+          path: WealthHubScreen.routePath,
+          builder: (context, params) => WealthHubScreen(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

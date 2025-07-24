@@ -27,6 +27,9 @@ class WalletUsersRecord extends FirestoreRecord {
   bool hasOnboardingCompleted() => _onboardingCompleted != null;
   bool? _onboardingCompleted;
 
+  String? _persona;
+  String get persona => _persona ?? '';
+
   WalletUsersRecord._(
     DocumentReference reference,
     Map<String, dynamic> data,
@@ -37,6 +40,7 @@ class WalletUsersRecord extends FirestoreRecord {
     _photoUrl = snapshotData['photo_url'] as String?;
     _lastSeen = snapshotData['last_seen'] as DateTime?;
     _onboardingCompleted = snapshotData['onboarding_completed'] as bool?;
+    _persona = snapshotData['persona'] as String?;
   }
 
   static CollectionReference get collection =>
@@ -72,6 +76,7 @@ Map<String, dynamic> createWalletUsersRecordData({
   String? photoUrl,
   DateTime? lastSeen,
   bool? onboardingCompleted,
+  String? persona,
 }) {
   final firestoreData = <String, dynamic>{};
 
@@ -81,6 +86,7 @@ Map<String, dynamic> createWalletUsersRecordData({
   firestoreData['photo_url'] = photoUrl;
   firestoreData['last_seen'] = lastSeen;
   firestoreData['onboarding_completed'] = onboardingCompleted ?? false;
+  firestoreData['persona'] = persona;
 
   return firestoreData;
 }

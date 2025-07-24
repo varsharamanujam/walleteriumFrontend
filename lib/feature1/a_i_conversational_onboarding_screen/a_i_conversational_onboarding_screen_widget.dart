@@ -99,7 +99,8 @@ class _AIConversationalOnboardingScreenWidgetState
                       child: TextFormField(
                         controller: _model.userMessageInputTextController,
                         focusNode: _model.userMessageInputFocusNode,
-                        readOnly: true, // Making the text field non-editable for this example
+                        readOnly:
+                            true, // Making the text field non-editable for this example
                         decoration: InputDecoration(
                           filled: true,
                           fillColor:
@@ -112,10 +113,9 @@ class _AIConversationalOnboardingScreenWidgetState
                     ),
                   ),
                   Padding(
-                    padding:
-                        const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 10.0, 0.0),
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                        0.0, 0.0, 10.0, 0.0),
                     child: FFButtonWidget(
-                      // --- FIX START: This onPressed logic is now corrected ---
                       onPressed: () async {
                         final user = currentUser;
                         if (user == null) {
@@ -123,25 +123,71 @@ class _AIConversationalOnboardingScreenWidgetState
                           return;
                         }
 
-                        // 1. This map contains ONLY the onboarding data.
-                        final onboardingData = {
-                          'investment_style': 'Aggressive Growth',
-                          'preferred_sectors': ['Technology', 'Healthcare', 'Renewable Energy'],
-                          'communication_preference': 'Email',
-                          'financial_literacy_score': 85,
-                          'onboarding_complete_time': FieldValue.serverTimestamp(),
-                        };
-                        await FirebaseFirestore.instance
-                            .collection('user_profiles')
-                            .doc(user.uid)
-                            .set(onboardingData);
-                        final walletUserDocRef = FirebaseFirestore.instance
-                            .collection('wallet_user_collection')
-                            .doc(user.uid);
-                        await walletUserDocRef.update({'onboarding_completed': true});
-                        context.goNamed(MainDashWidget.routeName);
+                        final batch = FirebaseFirestore.instance.batch();
+
+                        // --- 2. Dummy Financial Accounts ('user_accounts') ---
+                        final debitAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
+                        batch.set(debitAccountRef, {
+                          'user_id': user.uid,
+                          'account_name': 'HDFC Bank Savings',
+                          'account_type': 'Debit',
+                          'current_balance': 125500.75, // Stays a double
+                          'currency': 'INR',
+                          'institution_name': 'HDFC Bank',
+                          'created_at': FieldValue.serverTimestamp(),
+                          'account_color': '#1e90ff',
+                        });
+
+                        final cashAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
+                        batch.set(cashAccountRef, {
+                          'user_id': user.uid,
+                          'account_name': 'Cash Wallet',
+                          'account_type': 'Cash',
+                          'current_balance': 8500.00, // Explicitly a double
+                          'currency': 'INR',
+                          'created_at': FieldValue.serverTimestamp(),
+                          'account_color': '#32cd32',
+                        });
+
+                        // --- 3. Dummy Physical Assets ('user_assets') ---
+                        final vehicleAssetRef = FirebaseFirestore.instance.collection('user_assets').doc();
+                        batch.set(vehicleAssetRef, {
+                          'user_id': user.uid,
+                          'asset_name': 'My Suzuki Swift',
+                          'asset_type': 'Vehicle',
+                          // --- FIX: Values are now explicitly doubles ---
+                          'current_value': 680000.0,
+                          'purchase_value': 820000.0,
+                          'purchase_date': Timestamp.fromDate(DateTime(2023, 5, 20)),
+                          'metadata': {
+                            'make': 'Maruti Suzuki',
+                            'model': 'Swift VXI',
+                            'year': 2023,
+                            'kms_driven': 12400,
+                          }
+                        });
+
+                        // --- 4. Finalize Onboarding Status & Set Persona ---
+                        final walletUserDocRef = FirebaseFirestore.instance.collection('wallet_user_collection').doc(user.uid);
+                        batch.update(walletUserDocRef, {
+                          'onboarding_completed': true,
+                          'persona': 'Budgetor'
+                        });
+
+                        // Commit and navigate
+                        try {
+                          await batch.commit();
+                          context.goNamed(MainDashWidget.routeName);
+                        } catch (e) {
+                          print('Error committing batch write: $e');
+                          // Optionally, show an error message to the user
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    'Could not complete setup. Please try again.')),
+                          );
+                        }
                       },
-                      // --- FIX END ---
                       text: 'Finish',
                       icon: const Icon(
                         Icons.send,
