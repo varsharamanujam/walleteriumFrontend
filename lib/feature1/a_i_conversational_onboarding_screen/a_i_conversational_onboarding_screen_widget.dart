@@ -174,7 +174,7 @@ class _AIConversationalOnboardingScreenWidgetState
                       final walletUserDocRef = FirebaseFirestore.instance.collection('wallet_user_collection').doc(user.uid);
                       batch.update(walletUserDocRef, {
                         'onboarding_completed': true,
-                        'persona': 'A 32-year-old tech professional who is a careful budgetor.'
+                        'persona': 'Budgetor',
                       });
 
                       try {
