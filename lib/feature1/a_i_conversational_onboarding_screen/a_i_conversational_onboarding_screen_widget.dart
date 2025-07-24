@@ -117,77 +117,68 @@ class _AIConversationalOnboardingScreenWidgetState
                         0.0, 0.0, 10.0, 0.0),
                     child: FFButtonWidget(
                       onPressed: () async {
-                        final user = currentUser;
-                        if (user == null) {
-                          context.goNamed(AuthHubScreenWidget.routeName);
-                          return;
-                        }
+                      final user = currentUser;
+                      if (user == null) {
+                        context.goNamed(AuthHubScreenWidget.routeName);
+                        return;
+                      }
 
-                        final batch = FirebaseFirestore.instance.batch();
+                      final batch = FirebaseFirestore.instance.batch();
+                      
+                      // --- Create references with unique IDs FIRST ---
+                      final hdfcAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
+                      final cashAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
+                      final capitalAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
+                      final vehicleAssetRef = FirebaseFirestore.instance.collection('user_assets').doc();
 
-                        // --- 2. Dummy Financial Accounts ('user_accounts') ---
-                        final debitAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
-                        batch.set(debitAccountRef, {
-                          'user_id': user.uid,
-                          'account_name': 'HDFC Bank Savings',
-                          'account_type': 'Debit',
-                          'current_balance': 125500.75, // Stays a double
-                          'currency': 'INR',
-                          'institution_name': 'HDFC Bank',
-                          'created_at': FieldValue.serverTimestamp(),
-                          'account_color': '#1e90ff',
-                        });
+                      // --- Set Account Data ---
+                      batch.set(hdfcAccountRef, {
+                        'user_id': user.uid, 'account_name': 'HDFC Bank Savings', 'account_type': 'Debit',
+                        'current_balance': 125500.75, 'created_at': FieldValue.serverTimestamp(), 'account_color': '#1e90ff',
+                      });
+                      batch.set(cashAccountRef, {
+                        'user_id': user.uid, 'account_name': 'Cash Wallet', 'account_type': 'Cash',
+                        'current_balance': 8500.00, 'created_at': FieldValue.serverTimestamp(), 'account_color': '#32cd32',
+                      });
+                      batch.set(capitalAccountRef, {
+                          'user_id': user.uid, 'account_name': 'Zerodha Capital', 'account_type': 'Capital',
+                          'current_balance': 250000.00, 'created_at': FieldValue.serverTimestamp(), 'account_color': '#8A2BE2',
+                      });
 
-                        final cashAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
-                        batch.set(cashAccountRef, {
-                          'user_id': user.uid,
-                          'account_name': 'Cash Wallet',
-                          'account_type': 'Cash',
-                          'current_balance': 8500.00, // Explicitly a double
-                          'currency': 'INR',
-                          'created_at': FieldValue.serverTimestamp(),
-                          'account_color': '#32cd32',
-                        });
+                      // --- Set Asset Data ---
+                      batch.set(vehicleAssetRef, {
+                        'user_id': user.uid, 'asset_name': 'My Suzuki Swift', 'asset_type': 'Vehicle',
+                        'current_value': 680000.0, 'purchase_value': 820000.0,
+                        'purchase_date': Timestamp.fromDate(DateTime(2023, 5, 20)),
+                        'metadata': { 'make': 'Maruti Suzuki', 'model': 'Swift VXI', 'year': 2023 }
+                      });
 
-                        // --- 3. Dummy Physical Assets ('user_assets') ---
-                        final vehicleAssetRef = FirebaseFirestore.instance.collection('user_assets').doc();
-                        batch.set(vehicleAssetRef, {
-                          'user_id': user.uid,
-                          'asset_name': 'My Suzuki Swift',
-                          'asset_type': 'Vehicle',
-                          // --- FIX: Values are now explicitly doubles ---
-                          'current_value': 680000.0,
-                          'purchase_value': 820000.0,
-                          'purchase_date': Timestamp.fromDate(DateTime(2023, 5, 20)),
-                          'metadata': {
-                            'make': 'Maruti Suzuki',
-                            'model': 'Swift VXI',
-                            'year': 2023,
-                            'kms_driven': 12400,
-                          }
-                        });
+                      // --- Set Transaction Data (linked to HDFC account) ---
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 50000.0,
+                        'type': 'Income', 'description': 'Monthly Salary', 'category': 'Salary',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 1)),
+                      });
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 750.50,
+                        'type': 'Expense', 'description': 'Dinner at Toit', 'category': 'Food & Drink',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 20)),
+                      });
 
-                        // --- 4. Finalize Onboarding Status & Set Persona ---
-                        final walletUserDocRef = FirebaseFirestore.instance.collection('wallet_user_collection').doc(user.uid);
-                        batch.update(walletUserDocRef, {
-                          'onboarding_completed': true,
-                          'persona': 'Budgetor'
-                        });
+                      // --- Finalize Onboarding ---
+                      final walletUserDocRef = FirebaseFirestore.instance.collection('wallet_user_collection').doc(user.uid);
+                      batch.update(walletUserDocRef, {
+                        'onboarding_completed': true,
+                        'persona': 'A 32-year-old tech professional who is a careful budgetor.'
+                      });
 
-                        // Commit and navigate
-                        try {
-                          await batch.commit();
-                          context.goNamed(MainDashWidget.routeName);
-                        } catch (e) {
-                          print('Error committing batch write: $e');
-                          // Optionally, show an error message to the user
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    'Could not complete setup. Please try again.')),
-                          );
-                        }
-                      },
+                      try {
+                        await batch.commit();
+                        context.goNamed(MainDashWidget.routeName);
+                      } catch (e) {
+                        print('Error committing batch write: $e');
+                      }
+                    },
                       text: 'Finish',
                       icon: const Icon(
                         Icons.send,

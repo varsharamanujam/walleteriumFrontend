@@ -1,3 +1,5 @@
+// In lib/main_dash/main_dash_widget.dart
+
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -40,6 +42,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Future<void> _fetchDashboardData() async {
+    // ... (This function remains the same)
     final user = currentUser;
     if (user == null) {
       context.goNamed(AuthHubScreenWidget.routeName);
@@ -93,14 +96,9 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   @override
-  void dispose() {
-    _model.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // ... (This function remains the same)
+     return Scaffold(
       key: scaffoldKey,
       backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
       appBar: AppBar(
@@ -122,6 +120,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Widget _buildWelcomeHeader() {
+    // ... (This function remains the same)
     String personaTitle = "Investor";
     final userPersona = _walletUser?.persona;
     if (userPersona != null && userPersona.isNotEmpty) {
@@ -153,7 +152,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Widget _buildDashboardUI() {
-    return SingleChildScrollView(
+    // ... (This function remains the same)
+     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,39 +182,40 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
   
   Widget _buildAvailableBalanceCard() {
-    final double totalBalance = _accounts.fold(0.0, (sum, account) => sum + account.currentBalance);
-    final formattedBalance = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalBalance);
+  final double totalBalance = _accounts.fold(0.0, (sum, account) => sum + account.currentBalance);
+  final formattedBalance = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalBalance);
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 2,
-      margin: const EdgeInsets.all(8.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          context.pushNamed(SpendingAnalyzerScreen.routeName);
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Available Balance',
-                style: FlutterFlowTheme.of(context).labelLarge,
-              ),
-              SizedBox(height: 8),
-              Text(
-                formattedBalance,
-                style: FlutterFlowTheme.of(context).titleLarge,
-              )
-            ],
-          ),
+  return Card(
+    clipBehavior: Clip.antiAlias,
+    elevation: 2,
+    margin: const EdgeInsets.all(8.0),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: InkWell(
+      onTap: () {
+        context.pushNamed(AllTransactionsScreen.routeName);
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Available Balance',
+              style: FlutterFlowTheme.of(context).labelLarge,
+            ),
+            SizedBox(height: 8),
+            Text(
+              formattedBalance,
+              style: FlutterFlowTheme.of(context).titleLarge,
+            )
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
+  // --- UPDATED: Navigation logic is changed ---
   Widget _buildAssetsCard() {
     final double totalAssets = _assets.fold(0.0, (sum, asset) => sum + asset.currentValue);
     final formattedAssets = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalAssets);
@@ -227,6 +228,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
+          print('Assets card tapped!');
+          // Rule 2: Tapping on Assets takes us to the Wealth Hub screen
           context.pushNamed(WealthHubScreen.routeName);
         },
         child: Padding(
@@ -257,6 +260,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Widget _buildAccountsCarousel() {
+    // ... (This function remains the same)
     if (_accounts.isEmpty) {
       return Center(
         child: Padding(
@@ -292,6 +296,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
     );
   }
 
+  // --- UPDATED: Navigation logic is changed ---
   Widget _buildAccountCard(UserAccountsRecord account) {
     final balance = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(account.currentBalance);
     final color = colorFromHex(account.accountColor) ?? FlutterFlowTheme.of(context).primary;
@@ -301,10 +306,19 @@ class _MainDashWidgetState extends State<MainDashWidget> {
       margin: EdgeInsets.symmetric(horizontal: 8.0),
       child: InkWell(
         onTap: () {
+          print('${account.accountName} card tapped!');
+          
           if (account.accountType == 'Capital') {
-            context.pushNamed(WealthHubScreen.routeName);
+            // Rule 1: Capital account goes to the new All Transactions screen
+            context.pushNamed(AllTransactionsScreen.routeName);
           } else {
-            context.pushNamed(SpendingAnalyzerScreen.routeName);
+            // Rule 3: Debit/Cash accounts go to the specific Spending Analyzer
+            context.pushNamed(
+              SpendingAnalyzerScreen.routeName,
+              pathParameters: {
+                'accountId': account.reference.id,
+              },
+            );
           }
         },
         borderRadius: BorderRadius.circular(16),
@@ -322,6 +336,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             ],
           ),
           child: Column(
+            // ... (The rest of the card's UI remains the same)
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -363,6 +378,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
   
   Widget _buildResetUserButton() {
+    // ... (This function remains the same)
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: FFButtonWidget(
