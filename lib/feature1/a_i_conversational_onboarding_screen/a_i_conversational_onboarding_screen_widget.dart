@@ -128,7 +128,6 @@ class _AIConversationalOnboardingScreenWidgetState
                       // --- Create references with unique IDs FIRST ---
                       final hdfcAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
                       final cashAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
-                      final capitalAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
                       final vehicleAssetRef = FirebaseFirestore.instance.collection('user_assets').doc();
 
                       // --- Set Account Data ---
@@ -139,10 +138,6 @@ class _AIConversationalOnboardingScreenWidgetState
                       batch.set(cashAccountRef, {
                         'user_id': user.uid, 'account_name': 'Cash Wallet', 'account_type': 'Cash',
                         'current_balance': 8500.00, 'created_at': FieldValue.serverTimestamp(), 'account_color': '#32cd32',
-                      });
-                      batch.set(capitalAccountRef, {
-                          'user_id': user.uid, 'account_name': 'Zerodha Capital', 'account_type': 'Capital',
-                          'current_balance': 250000.00, 'created_at': FieldValue.serverTimestamp(), 'account_color': '#8A2BE2',
                       });
 
                       // --- Set Asset Data ---
@@ -162,6 +157,16 @@ class _AIConversationalOnboardingScreenWidgetState
                       batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
                         'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 750.50,
                         'type': 'Expense', 'description': 'Dinner at Toit', 'category': 'Food & Drink',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 20)),
+                      });
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 900.00,
+                        'type': 'Expense', 'description': 'movie', 'category': 'entertainment',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 20)),
+                      });
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 1500.00,
+                        'type': 'Expense', 'description': 'family outing', 'category': 'entertainment',
                         'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 20)),
                       });
 

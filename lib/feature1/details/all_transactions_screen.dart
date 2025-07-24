@@ -31,13 +31,13 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
     }
 
     final transactionsSnapshot = await TransactionsRecord.collection
-      .where('user_id', isEqualTo: user.uid)
-      .orderBy('transaction_date', descending: true)
-      .get();
-      
-  return transactionsSnapshot.docs
-      .map((doc) => TransactionsRecord.fromSnapshot(doc))
-      .toList();
+        .where('user_id', isEqualTo: user.uid)
+        .orderBy('transaction_date', descending: true)
+        .get();
+        
+    return transactionsSnapshot.docs
+        .map((doc) => TransactionsRecord.fromSnapshot(doc))
+        .toList();
   }
 
   @override
