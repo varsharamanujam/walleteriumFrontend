@@ -24,6 +24,7 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
   Future<Map<String, dynamic>>? _dataFuture;
   
   bool _isCategoryView = false;
+  String? _expandedCategory; // State to track the currently expanded category
 
   @override
   void initState() {
@@ -46,7 +47,7 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
     final transactionsSnapshot = await TransactionsRecord.collection
         .where('user_id', isEqualTo: userId)
         .where('account_id', isEqualTo: widget.accountId)
-        .orderBy('transaction_date', descending: true)
+        .orderBy('transaction_date', descending: true) // Ensure chronological order
         .get();
 
     return {
@@ -70,10 +71,10 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
         future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError || !snapshot.hasData) {
-            return Center(child: Text('Error loading account details.'));
+            return const Center(child: Text('Error loading account details.'));
           }
 
           final account = snapshot.data!['account'] as UserAccountsRecord;
@@ -102,7 +103,7 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         title: Text(account.accountName, style: FlutterFlowTheme.of(context).titleLarge),
-        subtitle: Text('Available Balance'),
+        subtitle: const Text('Available Balance'),
         trailing: Text(
           NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(account.currentBalance),
           style: FlutterFlowTheme.of(context).headlineSmall,
@@ -111,7 +112,6 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
     );
   }
 
-  // --- NEW: Toggle button to switch views ---
   Widget _buildViewToggle() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
@@ -120,14 +120,15 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
         onPressed: (index) {
           setState(() {
             _isCategoryView = index == 1;
+            _expandedCategory = null; // Collapse all categories when switching view
           });
         },
         borderRadius: BorderRadius.circular(8.0),
         selectedColor: Colors.white,
         fillColor: FlutterFlowTheme.of(context).primary,
         color: FlutterFlowTheme.of(context).primaryText,
-        constraints: BoxConstraints(minHeight: 40.0, minWidth: 100.0),
-        children: [
+        constraints: const BoxConstraints(minHeight: 40.0, minWidth: 100.0),
+        children: const [
           Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('List')),
           Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Category')),
         ],
@@ -135,13 +136,12 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
     );
   }
 
-  // --- NEW: The view for the chronological list of transactions ---
   Widget _buildListView(List<TransactionsRecord> transactions) {
     if (transactions.isEmpty) {
-      return Center(child: Text('No transactions found for this account.'));
+      return const Center(child: Text('No transactions found for this account.'));
     }
     return ListView.builder(
-      padding: EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(8.0),
       itemCount: transactions.length,
       itemBuilder: (context, index) {
         final tx = transactions[index];
@@ -150,106 +150,137 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
     );
   }
 
-Widget _buildCategoryView(List<TransactionsRecord> transactions) {
-  // 1. Process data for expenses
-  final Map<String, double> spendingByCategory = {};
-  final expenses = transactions.where((tx) => tx.type == 'Expense');
+  Widget _buildCategoryView(List<TransactionsRecord> transactions) {
+    // Group transactions by category, including both income and expense for display
+    final Map<String, List<TransactionsRecord>> transactionsByCategory = {};
+    final Map<String, double> categoryTotals = {};
 
-  if (expenses.isEmpty) {
-    return Center(child: Text('No expense data to categorize.'));
-  }
+    for (var tx in transactions) {
+      transactionsByCategory.update(
+        tx.category,
+        (list) => list..add(tx),
+        ifAbsent: () => [tx],
+      );
+      categoryTotals.update(
+        tx.category,
+        (value) => value + (tx.type == 'Income' ? tx.amount : -tx.amount),
+        ifAbsent: () => (tx.type == 'Income' ? tx.amount : -tx.amount),
+      );
+    }
 
-  for (var tx in expenses) {
-    spendingByCategory.update(
-      tx.category,
-      (value) => value + tx.amount,
-      ifAbsent: () => tx.amount,
-    );
-  }
-  
-  // 2. Prepare data for the pie chart
-  final List<Color> pieColors = [
-    Colors.red, Colors.blue, Colors.green, Colors.orange, Colors.purple, Colors.teal, Colors.pink
-  ];
-  final totalExpenses = expenses.fold(0.0, (sum, e) => sum + e.amount);
-  
-  final pieChartSections = spendingByCategory.entries.toList().asMap().entries.map((entry) {
-    final index = entry.key;
-    final data = entry.value;
-    final color = pieColors[index % pieColors.length];
-    final percentage = (data.value / totalExpenses * 100);
+    // Sort categories alphabetically
+    final sortedCategories = transactionsByCategory.keys.toList()..sort();
 
-    return PieChartSectionData(
-      color: color,
-      value: data.value,
-      title: '${percentage.toStringAsFixed(0)}%',
-      radius: 80,
-      titleStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(color: Colors.black.withOpacity(0.5), blurRadius: 2)]),
-    );
-  }).toList();
+    final List<Color> pieColors = [
+      Colors.red, Colors.blue, Colors.green, Colors.orange, Colors.purple, Colors.teal, Colors.pink
+    ];
 
-  // 3. Build the final UI using a SingleChildScrollView and Column
-  return SingleChildScrollView(
-    child: Column(
-      children: [
-        // Widget for the Pie Chart
-        Container(
-          height: 250, // Give the chart a fixed, non-overlapping space
-          padding: EdgeInsets.all(16),
-          child: PieChart(
-            PieChartData(
-              sections: pieChartSections,
-              borderData: FlBorderData(show: false),
-              sectionsSpace: 2,
-              centerSpaceRadius: 40,
+    // Prepare data for the pie chart (only for expenses if desired, or total)
+    final Map<String, double> spendingByCategoryForChart = {};
+    final expensesForChart = transactions.where((tx) => tx.type == 'Expense');
+    for (var tx in expensesForChart) {
+      spendingByCategoryForChart.update(
+        tx.category,
+        (value) => value + tx.amount,
+        ifAbsent: () => tx.amount,
+      );
+    }
+
+    final totalExpensesForChart = expensesForChart.fold(0.0, (sum, e) => sum + e.amount);
+    
+    final pieChartSections = spendingByCategoryForChart.entries.toList().asMap().entries.map((entry) {
+      final index = entry.key;
+      final data = entry.value;
+      final color = pieColors[index % pieColors.length];
+      final percentage = (data.value / totalExpensesForChart * 100);
+
+      return PieChartSectionData(
+        color: color,
+        value: data.value,
+        title: '${percentage.toStringAsFixed(0)}%',
+        radius: 80,
+        titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(color: Colors.black, blurRadius: 2)]),
+      );
+    }).toList();
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Pie Chart (only if there are expenses to show)
+          if (expensesForChart.isNotEmpty)
+            Container(
+              height: 250,
+              padding: const EdgeInsets.all(16),
+              child: PieChart(
+                PieChartData(
+                  sections: pieChartSections,
+                  borderData: FlBorderData(show: false),
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 40,
+                ),
+              ),
+            ),
+          
+          // List of expandable categories
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Column(
+              children: sortedCategories.map((category) {
+                final categoryTransactions = transactionsByCategory[category]!;
+                // Sort transactions within each category chronologically
+                categoryTransactions.sort((a, b) => a.transactionDate!.compareTo(b.transactionDate!));
+                
+                final categoryTotal = categoryTotals[category] ?? 0.0;
+                final formattedCategoryTotal = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(categoryTotal);
+                final categoryColor = categoryTotal >= 0 ? FlutterFlowTheme.of(context).success : FlutterFlowTheme.of(context).error;
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                  child: ExpansionTile(
+                    key: PageStorageKey(category), // Keep expansion state across rebuilds
+                    initiallyExpanded: _expandedCategory == category,
+                    onExpansionChanged: (isExpanded) {
+                      setState(() {
+                        _expandedCategory = isExpanded ? category : null;
+                      });
+                    },
+                    title: Text(category),
+                    trailing: Text(
+                      formattedCategoryTotal,
+                      style: TextStyle(fontWeight: FontWeight.bold, color: categoryColor),
+                    ),
+                    children: categoryTransactions.map((tx) => _buildTransactionTile(tx)).toList(),
+                  ),
+                );
+              }).toList(),
             ),
           ),
-        ),
-        
-        // Widget for the list of categories
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Column(
-            children: spendingByCategory.entries.map((entry) {
-              final categoryIndex = spendingByCategory.keys.toList().indexOf(entry.key);
-              final color = pieColors[categoryIndex % pieColors.length];
-              
-              return Card(
-                margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-                child: ListTile(
-                  leading: Icon(Icons.circle, color: color, size: 16),
-                  title: Text(entry.key),
-                  trailing: Text(
-                    NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(entry.value),
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
   
   Widget _buildTransactionTile(TransactionsRecord tx) {
     final isIncome = tx.type == 'Income';
     final color = isIncome ? FlutterFlowTheme.of(context).success : FlutterFlowTheme.of(context).error;
     final sign = isIncome ? '+' : '-';
 
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
-      child: ListTile(
-        leading: Icon(
-          isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-          color: color,
-        ),
-        title: Text(tx.description),
-        subtitle: Text(tx.category),
-        trailing: Text(
-          '$sign ${NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(tx.amount)}',
-          style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16),
+    return Padding( // Added Padding to the individual transaction tile for better spacing
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: Card(
+        elevation: 1, // Slightly less elevation for nested cards
+        margin: EdgeInsets.zero, // Remove outer margin if using Padding
+        child: ListTile(
+          leading: Icon(
+            isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+            color: color,
+          ),
+          title: Text(tx.description),
+          subtitle: Text('${tx.category} - ${DateFormat('MMM d, yyyy').format(tx.transactionDate!)}'), // Added date to subtitle
+          trailing: Text(
+            '$sign ${NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(tx.amount)}',
+            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16),
+          ),
         ),
       ),
     );
