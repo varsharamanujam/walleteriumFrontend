@@ -22,6 +22,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _nameController;
   String _selectedPersona = 'Budgetor'; // Default persona
+  String _selectedCurrency = '₹ INR'; // Default currency
   Map<String, bool> _assetPreferences = {
     'Real Estate': true,
     'Gold': true,
@@ -50,6 +51,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         setState(() {
           _nameController.text = walletUser.displayName;
           _selectedPersona = walletUser.persona.isNotEmpty ? walletUser.persona : 'Budgetor';
+          // Load currency preference, fallback to default
+          _selectedCurrency = walletUser.currency.isNotEmpty ? walletUser.currency : '₹ INR';
 
           // Load asset preferences, merge with defaults to ensure all options are present
           if (walletUser.assetPreferences != null) {
@@ -86,6 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await userDocRef.update({
         'display_name': _nameController.text,
         'persona': _selectedPersona,
+        'currency': _selectedCurrency, // Save currency preference
         'asset_preferences': _assetPreferences, // Save the map directly
       });
       if (mounted) {
@@ -95,6 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Navigator.pop(context, {
           'displayName': _nameController.text,
           'persona': _selectedPersona,
+          'currency': _selectedCurrency, // Return currency preference
           'assetPreferences': _assetPreferences,
         });
       }
@@ -189,7 +194,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _selectedPersona,
-              isExpanded: true, // Set isExpanded to true to fix overflow
+              isExpanded: true,
               decoration: const InputDecoration(
                 labelText: 'Persona',
                 border: OutlineInputBorder(),
@@ -242,6 +247,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24),
 
+            // Default Currency
+            Text(
+              'Default Currency',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _selectedCurrency,
+              isExpanded: true,
+              decoration: const InputDecoration( // Removed prefixIcon from here
+                labelText: 'Currency',
+                border: OutlineInputBorder(),
+                // The currency symbol will now be part of the Text in DropdownMenuItem
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: '₹ INR',
+                  child: Text('₹ INR (Indian Rupee)'),
+                ),
+                DropdownMenuItem(
+                  value: '\$ USD',
+                  child: Text('\$ USD (United States Dollar)'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedCurrency = value;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 24),
+
             // Account Management
             Text(
               'Account Management',
@@ -261,7 +300,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 width: double.infinity,
                 height: 40,
                 color: Theme.of(context).primaryColor.withOpacity(0.1),
-                textStyle: Theme.of(context).textTheme.titleSmall,
+                textStyle: const TextStyle( // Explicitly set text style
+                  color: Colors.black,
+                  fontSize: 14.0, // Adjust as needed
+                  fontWeight: FontWeight.w500, // Adjust as needed
+                ),
                 elevation: 0,
                 borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 1),
                 borderRadius: BorderRadius.circular(8),
@@ -281,7 +324,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 width: double.infinity,
                 height: 40,
                 color: Theme.of(context).primaryColor.withOpacity(0.1),
-                textStyle: Theme.of(context).textTheme.titleSmall,
+                textStyle: const TextStyle( // Explicitly set text style
+                  color: Colors.black,
+                  fontSize: 14.0, // Adjust as needed
+                  fontWeight: FontWeight.w500, // Adjust as needed
+                ),
                 elevation: 0,
                 borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 1),
                 borderRadius: BorderRadius.circular(8),

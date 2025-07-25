@@ -36,6 +36,9 @@ class WalletUsersRecord extends FirestoreRecord {
   bool hasAssetPreferences() => _assetPreferences != null;
   Map<String, dynamic>? _assetPreferences;
 
+  String? _currency;
+  String get currency => _currency ?? '';
+
 
   WalletUsersRecord._(
     DocumentReference reference,
@@ -48,8 +51,8 @@ class WalletUsersRecord extends FirestoreRecord {
     _lastSeen = snapshotData['last_seen'] as DateTime?;
     _onboardingCompleted = snapshotData['onboarding_completed'] as bool?;
     _persona = snapshotData['persona'] as String?;
-    // Initialize assetPreferences from snapshotData
     _assetPreferences = snapshotData['asset_preferences'] as Map<String, dynamic>?;
+    _currency = snapshotData['currency'] as String?;  
   }
 
   static CollectionReference get collection =>
