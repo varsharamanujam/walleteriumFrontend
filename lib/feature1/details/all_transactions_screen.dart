@@ -1,59 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fl_chart/fl_chart.dart'; // Make sure fl_chart is imported
+import 'package:fl_chart/fl_chart.dart'; 
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/backend.dart';
+import '/auth/firebase_auth/auth_util.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
-class SpendingAnalyzerScreen extends StatefulWidget {
-  const SpendingAnalyzerScreen({
-    super.key,
-    required this.accountId,
-  });
+class AllTransactionsScreen extends StatefulWidget {
+  const AllTransactionsScreen({super.key});
 
-  final String accountId;
-
-  static String routeName = 'SpendingAnalyzer';
-  static String routePath = '/spendingAnalyzer';
+  static String routeName = 'AllTransactions';
+  static String routePath = '/allTransactions';
 
   @override
-  State<SpendingAnalyzerScreen> createState() => _SpendingAnalyzerScreenState();
+  State<AllTransactionsScreen> createState() => _AllTransactionsScreenState();
 }
 
-class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
+class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
   Future<Map<String, dynamic>>? _dataFuture;
   
+  // --- NEW: State for toggling the view ---
   bool _isCategoryView = false;
 
   @override
   void initState() {
     super.initState();
-    _dataFuture = _fetchData();
+    _dataFuture = _fetchScreenData();
   }
 
-  Future<Map<String, dynamic>> _fetchData() async {
-    final accountDoc = await UserAccountsRecord.collection.doc(widget.accountId).get();
-    if (!accountDoc.exists) {
-      throw Exception('Account not found');
-    }
-    
-    final account = UserAccountsRecord.fromSnapshot(accountDoc);
-    final userId = account.userId;
-    if (userId.isEmpty) {
-      throw Exception('User ID not found in account document');
+  Future<Map<String, dynamic>> _fetchScreenData() async {
+    final user = currentUser;
+    if (user == null) {
+      return {'accounts': [], 'transactions': []};
     }
 
-    final transactionsSnapshot = await TransactionsRecord.collection
-        .where('user_id', isEqualTo: userId)
-        .where('account_id', isEqualTo: widget.accountId)
+    final accountsFuture = UserAccountsRecord.collection.where('user_id', isEqualTo: user.uid).get();
+    final transactionsFuture = TransactionsRecord.collection
+        .where('user_id', isEqualTo: user.uid)
         .orderBy('transaction_date', descending: true)
         .get();
 
+    final results = await Future.wait([accountsFuture, transactionsFuture]);
+
+    final accountsSnapshot = results[0] as QuerySnapshot;
+    final transactionsSnapshot = results[1] as QuerySnapshot;
+
     return {
-      'account': account,
-      'transactions': transactionsSnapshot.docs
-          .map((doc) => TransactionsRecord.fromSnapshot(doc))
-          .toList(),
+      'accounts': accountsSnapshot.docs.map((doc) => UserAccountsRecord.fromSnapshot(doc)).toList(),
+      'transactions': transactionsSnapshot.docs.map((doc) => TransactionsRecord.fromSnapshot(doc)).toList(),
     };
   }
 
@@ -63,7 +57,7 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
       appBar: AppBar(
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
         iconTheme: IconThemeData(color: FlutterFlowTheme.of(context).primaryText),
-        title: Text('Account Details', style: FlutterFlowTheme.of(context).headlineSmall),
+        title: Text('All Transactions', style: FlutterFlowTheme.of(context).headlineSmall),
         elevation: 0,
       ),
       body: FutureBuilder<Map<String, dynamic>>(
@@ -73,16 +67,17 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
             return Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError || !snapshot.hasData) {
-            return Center(child: Text('Error loading account details.'));
+            return Center(child: Text('Could not load data.'));
           }
 
-          final account = snapshot.data!['account'] as UserAccountsRecord;
+          final accounts = snapshot.data!['accounts'] as List<UserAccountsRecord>;
           final transactions = snapshot.data!['transactions'] as List<TransactionsRecord>;
+          final totalBalance = accounts.fold(0.0, (sum, acc) => sum + acc.currentBalance);
 
           return Column(
             children: [
-              _buildAccountInfoCard(account),
-              _buildViewToggle(), // The view toggle
+              _buildTotalBalanceCard(totalBalance),
+              _buildViewToggle(), // The new toggle button
               Expanded(
                 child: _isCategoryView
                     ? _buildCategoryView(transactions) // Show category view if toggled
@@ -95,50 +90,35 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
     );
   }
 
-  Widget _buildAccountInfoCard(UserAccountsRecord account) {
-    return Card(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        title: Text(account.accountName, style: FlutterFlowTheme.of(context).titleLarge),
-        subtitle: Text('Available Balance'),
-        trailing: Text(
-          NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(account.currentBalance),
-          style: FlutterFlowTheme.of(context).headlineSmall,
-        ),
-      ),
-    );
-  }
-
-  // --- NEW: Toggle button to switch views ---
+  // --- NEW: A toggle button to switch between views ---
   Widget _buildViewToggle() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: ToggleButtons(
-        isSelected: [!_isCategoryView, _isCategoryView],
-        onPressed: (index) {
-          setState(() {
-            _isCategoryView = index == 1;
-          });
-        },
-        borderRadius: BorderRadius.circular(8.0),
-        selectedColor: Colors.white,
-        fillColor: FlutterFlowTheme.of(context).primary,
-        color: FlutterFlowTheme.of(context).primaryText,
-        constraints: BoxConstraints(minHeight: 40.0, minWidth: 100.0),
-        children: [
-          Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('List')),
-          Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Category')),
-        ],
-      ),
-    );
-  }
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+    child: ToggleButtons(
+      // --- FIX: Removed the extra underscore before the '!' ---
+      isSelected: [!_isCategoryView, _isCategoryView],
+      onPressed: (index) {
+        setState(() {
+          _isCategoryView = index == 1;
+        });
+      },
+      borderRadius: BorderRadius.circular(8.0),
+      selectedColor: Colors.white,
+      fillColor: FlutterFlowTheme.of(context).primary,
+      color: FlutterFlowTheme.of(context).primaryText,
+      constraints: BoxConstraints(minHeight: 40.0, minWidth: 100.0),
+      children: [
+        Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('List')),
+        Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Category')),
+      ],
+    ),
+  );
+}
 
   // --- NEW: The view for the chronological list of transactions ---
   Widget _buildListView(List<TransactionsRecord> transactions) {
     if (transactions.isEmpty) {
-      return Center(child: Text('No transactions found for this account.'));
+      return Center(child: Text('No transactions found.'));
     }
     return ListView.builder(
       padding: EdgeInsets.all(8.0),
@@ -149,9 +129,9 @@ class _SpendingAnalyzerScreenState extends State<SpendingAnalyzerScreen> {
       },
     );
   }
-
+  
 Widget _buildCategoryView(List<TransactionsRecord> transactions) {
-  // 1. Process data for expenses
+  // 1. Process data: Filter for expenses and group by category
   final Map<String, double> spendingByCategory = {};
   final expenses = transactions.where((tx) => tx.type == 'Expense');
 
@@ -171,17 +151,16 @@ Widget _buildCategoryView(List<TransactionsRecord> transactions) {
   final List<Color> pieColors = [
     Colors.red, Colors.blue, Colors.green, Colors.orange, Colors.purple, Colors.teal, Colors.pink
   ];
-  final totalExpenses = expenses.fold(0.0, (sum, e) => sum + e.amount);
-  
-  final pieChartSections = spendingByCategory.entries.toList().asMap().entries.map((entry) {
-    final index = entry.key;
-    final data = entry.value;
-    final color = pieColors[index % pieColors.length];
-    final percentage = (data.value / totalExpenses * 100);
+  int colorIndex = 0;
+  final pieChartSections = spendingByCategory.entries.map((entry) {
+    final color = pieColors[colorIndex % pieColors.length];
+    colorIndex++;
+    final totalExpenses = expenses.fold(0.0, (sum, e) => sum + e.amount);
+    final percentage = (entry.value / totalExpenses * 100);
 
     return PieChartSectionData(
       color: color,
-      value: data.value,
+      value: entry.value,
       title: '${percentage.toStringAsFixed(0)}%',
       radius: 80,
       titleStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(color: Colors.black.withOpacity(0.5), blurRadius: 2)]),
@@ -194,7 +173,7 @@ Widget _buildCategoryView(List<TransactionsRecord> transactions) {
       children: [
         // Widget for the Pie Chart
         Container(
-          height: 250, // Give the chart a fixed, non-overlapping space
+          height: 250, // Give the chart ample, fixed space
           padding: EdgeInsets.all(16),
           child: PieChart(
             PieChartData(
@@ -232,8 +211,36 @@ Widget _buildCategoryView(List<TransactionsRecord> transactions) {
     ),
   );
 }
-  
+
+  Widget _buildTotalBalanceCard(double totalBalance) {
+    // ... (This function remains the same)
+    return Card(
+      margin: const EdgeInsets.all(16.0),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Total Available Balance',
+              style: FlutterFlowTheme.of(context).titleMedium,
+            ),
+            Text(
+              NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalBalance),
+              style: FlutterFlowTheme.of(context).headlineSmall?.copyWith(
+                color: FlutterFlowTheme.of(context).primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTransactionTile(TransactionsRecord tx) {
+    // ... (This function remains the same)
     final isIncome = tx.type == 'Income';
     final color = isIncome ? FlutterFlowTheme.of(context).success : FlutterFlowTheme.of(context).error;
     final sign = isIncome ? '+' : '-';
