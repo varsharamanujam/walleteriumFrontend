@@ -6,8 +6,12 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart'; // Added import
+import 'package:file_picker/file_picker.dart'; // Added import
+import 'package:firebase_storage/firebase_storage.dart'; // Added import
 import 'main_dash_model.dart';
 export 'main_dash_model.dart';
+import 'dart:io';
 
 
 import 'notification_card_widget.dart';
@@ -73,12 +77,14 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Future<void> _fetchDashboardData() async {
-	// ... (This function remains the same)									   
+    print('MainDashWidget: _fetchDashboardData called.');
     final user = currentUser;
     if (user == null) {
+      print('MainDashWidget: currentUser is null, redirecting to AuthHubScreen.');
       context.goNamed(AuthHubScreenWidget.routeName);
       return;
     }
+    print('MainDashWidget: currentUser is not null. UID: ${user.uid}');
 
     try {
       final accountsFuture = UserAccountsRecord.collection.where('user_id', isEqualTo: user.uid).get();
@@ -108,18 +114,21 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           
           if(walletUserSnapshot.exists) {
             _walletUser = WalletUsersRecord.fromSnapshot(walletUserSnapshot);
+            print('MainDashWidget: WalletUser data fetched. Onboarding completed: ${_walletUser?.onboardingCompleted}');
+          } else {
+            print('MainDashWidget: WalletUser document does not exist for UID: ${user.uid}');
           }
           
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('Failed to fetch dashboard data: $e');
+      print('MainDashWidget: Failed to fetch dashboard data: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-         ScaffoldMessenger.of(context).showSnackBar(
+         ScaffoldMessenger.of(this.context).showSnackBar(
           SnackBar(content: Text('Could not load dashboard data.')),
         );
       }
@@ -182,18 +191,206 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                 ? Center(child: Text('User data could not be loaded.'))
                 : _buildDashboardUI(),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            builder: (BuildContext context) {
+              return _buildUploadOptionsSheet(context);
+            },
+          );
+        },
+        backgroundColor: FlutterFlowTheme.of(context).primary,
+        child: Icon(Icons.upload_file, color: Colors.white),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: <Widget>[
+            IconButton(
+              icon: Icon(Icons.edit_note),
+              onPressed: () {
+                // Navigate to Budget & Goals Editing Page
+                Navigator.pushNamed(context, '/edit_budget_goals');
+              },
+            ),
+            SizedBox(width: 48), // The space for the FAB
+            IconButton(
+              icon: Icon(Icons.smart_toy),
+              onPressed: () {
+                // Navigate to AI Coach page
+                Navigator.pushNamed(context, '/ai_coach');
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
+
+  Widget _buildUploadOptionsSheet(BuildContext context) {
+    return Container(
+      child: Wrap(
+        children: <Widget>[
+          ListTile(
+            leading: Icon(Icons.image),
+            title: Text('Upload Image (Gallery)'),
+            onTap: () async {
+              final ImagePicker picker = ImagePicker();
+              final XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
+              if (imageFile != null) {
+                print('Image selected from gallery: ${imageFile.path}');
+                final downloadUrl = await uploadFileToFirebaseStorage(
+                  context: context,
+                  filePath: imageFile.path,
+                  fileName: imageFile.name,
+                  fileType: 'image',
+                );
+                if (downloadUrl != null) {
+                  await saveUploadedFileMetadata(
+                    context: context,
+                    downloadUrl: downloadUrl,
+                    fileType: 'image',
+                  );
+                  print('Image has been successfully uploaded.'); // Added console log
+                }
+              } else {
+                print('Image upload cancelled.');
+              }
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.video_library),
+            title: Text('Upload Video (Gallery)'),
+            onTap: () async {
+              Navigator.pop(context);
+              final ImagePicker picker = ImagePicker();
+              final XFile? videoFile = await picker.pickVideo(source: ImageSource.gallery);
+              if (videoFile != null) {
+                print('Video selected from gallery: ${videoFile.path}');
+                final downloadUrl = await uploadFileToFirebaseStorage(
+                  context: context,
+                  filePath: videoFile.path,
+                  fileName: videoFile.name,
+                  fileType: 'video',
+                );
+                if (downloadUrl != null) {
+                  await saveUploadedFileMetadata(
+                    context: context,
+                    downloadUrl: downloadUrl,
+                    fileType: 'video',
+                  );
+                  print('Video has been successfully uploaded.');
+                }
+              } else {
+                print('Video upload cancelled.');
+              }
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.camera_alt),
+            title: Text('Capture Image (Camera)'),
+            onTap: () async {
+              Navigator.pop(context);
+              final ImagePicker picker = ImagePicker();
+              final XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
+              if (imageFile != null) {
+                print('Image captured: ${imageFile.path}');
+                final downloadUrl = await uploadFileToFirebaseStorage(
+                  context: context,
+                  filePath: imageFile.path,
+                  fileName: imageFile.name,
+                  fileType: 'image',
+                );
+                if (downloadUrl != null) {
+                  await saveUploadedFileMetadata(
+                    context: context,
+                    downloadUrl: downloadUrl,
+                    fileType: 'image',
+                  );
+                  print('Image has been successfully uploaded.');
+                }
+              } else {
+                print('Image capture cancelled.');
+              }
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.videocam),
+            title: Text('Record Video (Camera)'),
+            onTap: () async {
+              Navigator.pop(context);
+              final ImagePicker picker = ImagePicker();
+              final XFile? videoFile = await picker.pickVideo(source: ImageSource.camera);
+              if (videoFile != null) {
+                print('Video recorded: ${videoFile.path}');
+                final downloadUrl = await uploadFileToFirebaseStorage(
+                  context: context,
+                  filePath: videoFile.path,
+                  fileName: videoFile.name,
+                  fileType: 'video',
+                );
+                if (downloadUrl != null) {
+                  await saveUploadedFileMetadata(
+                    context: context,
+                    downloadUrl: downloadUrl,
+                    fileType: 'video',
+                  );
+                  print('Video has been successfully uploaded.');
+                }
+              } else {
+                print('Video recording cancelled.');
+              }
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.picture_as_pdf),
+            title: Text('Upload PDF (File Picker)'),
+            onTap: () async {
+              Navigator.pop(context);
+              FilePickerResult? result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: ['pdf'],
+              );
+              if (result != null) {
+                print('PDF selected: ${result.files.single.path}');
+                final downloadUrl = await uploadFileToFirebaseStorage(
+                  context: context,
+                  filePath: result.files.single.path!,
+                  fileName: result.files.single.name,
+                  fileType: 'pdf',
+                );
+                if (downloadUrl != null) {
+                  await saveUploadedFileMetadata(
+                    context: context,
+                    downloadUrl: downloadUrl,
+                    fileType: 'pdf',
+                  );
+                  print('PDF has been successfully uploaded.');
+                }
+              } else {
+                print('PDF upload cancelled.');
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  final RegExp _personaRegex = RegExp(
+    r'\b(aggressive investor|long-term investor|tech professional|visionary|budgetor)\b',
+    caseSensitive: false,
+  );
 
   Widget _buildWelcomeHeader() {
     String personaTitle = "Investor";
     final userPersona = _walletUser?.persona;
     if (userPersona != null && userPersona.isNotEmpty) {
-      final regex = RegExp(
-        r'\b(aggressive investor|long-term investor|tech professional|visionary|budgetor)\b',
-        caseSensitive: false,
-      );
-      final match = regex.firstMatch(userPersona);
+      final match = _personaRegex.firstMatch(userPersona);
       if (match != null) {
         final foundTitle = match.group(0)!;
         personaTitle = foundTitle[0].toUpperCase() + foundTitle.substring(1);
@@ -547,6 +744,89 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           borderRadius: BorderRadius.circular(8),
         ),
       ),
+    );
+  }
+}
+
+Future<String?> uploadFileToFirebaseStorage({
+  required BuildContext context, // Added BuildContext parameter
+  required String filePath,
+  required String fileName,
+  required String fileType, // e.g., 'image', 'video', 'pdf'
+}) async {
+  // Ensure a user is logged in
+  final user = currentUser;
+  if (user == null) {
+    print('Error: User is not logged in.');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('You must be logged in to upload files.')),
+    );
+    return null;
+  }
+
+  // Create a File object from the provided path
+  final file = File(filePath);
+
+  // Create a storage reference with a structured path: uploads/{userId}/{fileType}/{fileName}
+  final storageRef = FirebaseStorage.instance
+      .ref()
+      .child('uploads')
+      .child(user.uid!)
+      .child(fileType)
+      .child(fileName);
+
+  try {
+    // Show a loading indicator or notification
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Uploading $fileName...')),
+    );
+
+    // Upload the file
+    final uploadTask = storageRef.putFile(file);
+
+    // Await the upload to complete
+    final snapshot = await uploadTask.whenComplete(() => {});
+
+    // Get the download URL
+    final downloadUrl = await snapshot.ref.getDownloadURL();
+    
+    print('File uploaded successfully: $downloadUrl');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Upload successful!')),
+    );
+    
+    return downloadUrl;
+  } on FirebaseException catch (e) {
+    print('Error uploading file to Firebase Storage: ${e.message}');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error uploading file: ${e.code}')),
+    );
+    return null;
+  }
+}
+
+/// Saves the file metadata to a new collection in Firestore.
+Future<void> saveUploadedFileMetadata({
+  required BuildContext context, // Added BuildContext parameter
+  required String downloadUrl,
+  required String fileType,
+}) async {
+  final user = currentUser;
+  if (user == null) return;
+
+  try {
+    // Create a new document in an 'uploaded_files' collection
+    await FirebaseFirestore.instance.collection('uploaded_files').add({
+      'user_id': user.uid,
+      'download_url': downloadUrl,
+      'file_type': fileType,
+      'uploaded_at': FieldValue.serverTimestamp(),
+    });
+    print('File metadata saved to Firestore.');
+  } catch (e) {
+    print('Error saving metadata to Firestore: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not save file details.')),
     );
   }
 }

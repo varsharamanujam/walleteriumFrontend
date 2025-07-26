@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:walleterium/backend/schema/wallet_user_record.dart';
+import 'package:walleterium/backend/schema/uploaded_files_record.dart';
 import '../auth/firebase_auth/auth_util.dart';
 
 import '../flutter_flow/flutter_flow_util.dart';
@@ -22,6 +23,9 @@ export 'schema/wallet_user_record.dart';
 export 'schema/user_accounts_record.dart';
 export 'schema/user_assets_record.dart';
 export 'schema/transactions_record.dart';
+export 'schema/uploaded_files_record.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
 /// Functions to query UserProfilesRecords (as a Stream and as a Future).
 Future<int> queryUserProfilesRecordCount({
@@ -218,4 +222,55 @@ Future maybeCreateUser(User user) async {
 Future updateUserDocument({String? email}) async {
   await currentUserDocument?.reference
       .update(createWalletUsersRecordData(email: email));
+}
+
+// Firebase Storage upload function
+Future<String?> uploadFileToFirebaseStorage({
+  required String filePath,
+  required String fileName,
+  required String fileType, // e.g., 'image', 'video', 'pdf'
+}) async {
+  try {
+    final userUid = currentUserUid;
+    if (userUid == null) {
+      print('User not logged in. Cannot upload file.');
+      return null;
+    }
+
+    final storageRef = FirebaseStorage.instance.ref();
+    final fileExtension = filePath.split('.').last;
+    final uploadPath = '$userUid/${DateTime.now().millisecondsSinceEpoch}_${fileType}.$fileExtension';
+    final uploadTask = storageRef.child(uploadPath).putFile(File(filePath)); //
+
+    final snapshot = await uploadTask.whenComplete(() {});
+    final downloadUrl = await snapshot.ref.getDownloadURL();
+    return downloadUrl;
+  } catch (e) {
+    print('Error uploading file to Firebase Storage: $e');
+    return null;
+  }
+}
+
+// Firestore metadata storage function
+Future<void> saveUploadedFileMetadata({
+  required String downloadUrl,
+  required String fileType,
+}) async {
+  try {
+    final userUid = currentUserUid;
+    if (userUid == null) {
+      print('User not logged in. Cannot save file metadata.');
+      return;
+    }
+
+    await UploadedFilesRecord.collection.add(createUploadedFilesRecordData(
+      downloadUrl: downloadUrl,
+      uploaderUid: userUid,
+      uploadedAt: DateTime.now(),
+      fileType: fileType,
+    ));
+    print('File metadata saved to Firestore.');
+  } catch (e) {
+    print('Error saving file metadata to Firestore: $e');
+  }
 }
