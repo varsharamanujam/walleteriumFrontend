@@ -37,9 +37,10 @@ dependencies:
   cloud_firestore_platform_interface: 6.6.9
   cloud_firestore_web: 4.4.9
   cloud_functions: 5.5.2
-  collection: 1.19.1
+  collection: ^1.18.0
   cupertino_icons: ^1.0.6
   file_picker: ^8.0.0
+  firebase_app_check: 0.3.2+7
   firebase_auth: 5.6.0
   firebase_auth_platform_interface: 7.7.0
   firebase_auth_web: 5.15.0
@@ -49,6 +50,7 @@ dependencies:
   firebase_performance: 0.10.1+7
   firebase_performance_platform_interface: 0.1.5+7
   firebase_performance_web: 0.1.7+13
+  firebase_storage: ^12.0.3
   fl_chart: ^0.68.0
   flutter_animate: 4.5.0
   flutter_cache_manager: 3.4.1

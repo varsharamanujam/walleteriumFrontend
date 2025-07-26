@@ -8,8 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart'; // Added import
 import 'package:file_picker/file_picker.dart'; // Added import
+import 'package:firebase_storage/firebase_storage.dart'; // Added import
 import 'main_dash_model.dart';
 export 'main_dash_model.dart';
+import 'dart:io';
 
 
 import 'notification_card_widget.dart';
@@ -126,7 +128,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
         setState(() {
           _isLoading = false;
         });
-         ScaffoldMessenger.of(context).showSnackBar(
+         ScaffoldMessenger.of(this.context).showSnackBar(
           SnackBar(content: Text('Could not load dashboard data.')),
         );
       }
@@ -237,12 +239,24 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             leading: Icon(Icons.image),
             title: Text('Upload Image (Gallery)'),
             onTap: () async {
-              Navigator.pop(context);
               final ImagePicker picker = ImagePicker();
               final XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
               if (imageFile != null) {
-                print('Image uploaded from gallery: ${imageFile.path}');
-                // Your logic here to handle the uploaded image file
+                print('Image selected from gallery: ${imageFile.path}');
+                final downloadUrl = await uploadFileToFirebaseStorage(
+                  context: context,
+                  filePath: imageFile.path,
+                  fileName: imageFile.name,
+                  fileType: 'image',
+                );
+                if (downloadUrl != null) {
+                  await saveUploadedFileMetadata(
+                    context: context,
+                    downloadUrl: downloadUrl,
+                    fileType: 'image',
+                  );
+                  print('Image has been successfully uploaded.'); // Added console log
+                }
               } else {
                 print('Image upload cancelled.');
               }
@@ -256,8 +270,20 @@ class _MainDashWidgetState extends State<MainDashWidget> {
               final ImagePicker picker = ImagePicker();
               final XFile? videoFile = await picker.pickVideo(source: ImageSource.gallery);
               if (videoFile != null) {
-                print('Video uploaded from gallery: ${videoFile.path}');
-                // Your logic here to handle the uploaded video file
+                print('Video selected from gallery: ${videoFile.path}');
+                final downloadUrl = await uploadFileToFirebaseStorage(
+                  context: context,
+                  filePath: videoFile.path,
+                  fileName: videoFile.name,
+                  fileType: 'video',
+                );
+                if (downloadUrl != null) {
+                  await saveUploadedFileMetadata(
+                    context: context,
+                    downloadUrl: downloadUrl,
+                    fileType: 'video',
+                  );
+                }
               } else {
                 print('Video upload cancelled.');
               }
@@ -272,7 +298,19 @@ class _MainDashWidgetState extends State<MainDashWidget> {
               final XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
               if (imageFile != null) {
                 print('Image captured: ${imageFile.path}');
-                // Your logic here to handle the captured image file
+                final downloadUrl = await uploadFileToFirebaseStorage(
+                  context: context,
+                  filePath: imageFile.path,
+                  fileName: imageFile.name,
+                  fileType: 'image',
+                );
+                if (downloadUrl != null) {
+                  await saveUploadedFileMetadata(
+                    context: context,
+                    downloadUrl: downloadUrl,
+                    fileType: 'image',
+                  );
+                }
               } else {
                 print('Image capture cancelled.');
               }
@@ -287,7 +325,19 @@ class _MainDashWidgetState extends State<MainDashWidget> {
               final XFile? videoFile = await picker.pickVideo(source: ImageSource.camera);
               if (videoFile != null) {
                 print('Video recorded: ${videoFile.path}');
-                // Your logic here to handle the recorded video file
+                final downloadUrl = await uploadFileToFirebaseStorage(
+                  context: context,
+                  filePath: videoFile.path,
+                  fileName: videoFile.name,
+                  fileType: 'video',
+                );
+                if (downloadUrl != null) {
+                  await saveUploadedFileMetadata(
+                    context: context,
+                    downloadUrl: downloadUrl,
+                    fileType: 'video',
+                  );
+                }
               } else {
                 print('Video recording cancelled.');
               }
@@ -303,8 +353,20 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                 allowedExtensions: ['pdf'],
               );
               if (result != null) {
-                print('PDF uploaded: ${result.files.single.path}');
-                // Your logic here to handle the uploaded PDF file
+                print('PDF selected: ${result.files.single.path}');
+                final downloadUrl = await uploadFileToFirebaseStorage(
+                  context: context,
+                  filePath: result.files.single.path!,
+                  fileName: result.files.single.name,
+                  fileType: 'pdf',
+                );
+                if (downloadUrl != null) {
+                  await saveUploadedFileMetadata(
+                    context: context,
+                    downloadUrl: downloadUrl,
+                    fileType: 'pdf',
+                  );
+                }
               } else {
                 print('PDF upload cancelled.');
               }
@@ -315,15 +377,16 @@ class _MainDashWidgetState extends State<MainDashWidget> {
     );
   }
 
+  final RegExp _personaRegex = RegExp(
+    r'\b(aggressive investor|long-term investor|tech professional|visionary|budgetor)\b',
+    caseSensitive: false,
+  );
+
   Widget _buildWelcomeHeader() {
     String personaTitle = "Investor";
     final userPersona = _walletUser?.persona;
     if (userPersona != null && userPersona.isNotEmpty) {
-      final regex = RegExp(
-        r'\b(aggressive investor|long-term investor|tech professional|visionary|budgetor)\b',
-        caseSensitive: false,
-      );
-      final match = regex.firstMatch(userPersona);
+      final match = _personaRegex.firstMatch(userPersona);
       if (match != null) {
         final foundTitle = match.group(0)!;
         personaTitle = foundTitle[0].toUpperCase() + foundTitle.substring(1);
@@ -677,6 +740,89 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           borderRadius: BorderRadius.circular(8),
         ),
       ),
+    );
+  }
+}
+
+Future<String?> uploadFileToFirebaseStorage({
+  required BuildContext context, // Added BuildContext parameter
+  required String filePath,
+  required String fileName,
+  required String fileType, // e.g., 'image', 'video', 'pdf'
+}) async {
+  // Ensure a user is logged in
+  final user = currentUser;
+  if (user == null) {
+    print('Error: User is not logged in.');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('You must be logged in to upload files.')),
+    );
+    return null;
+  }
+
+  // Create a File object from the provided path
+  final file = File(filePath);
+
+  // Create a storage reference with a structured path: uploads/{userId}/{fileType}/{fileName}
+  final storageRef = FirebaseStorage.instance
+      .ref()
+      .child('uploads')
+      .child(user.uid!)
+      .child(fileType)
+      .child(fileName);
+
+  try {
+    // Show a loading indicator or notification
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Uploading $fileName...')),
+    );
+
+    // Upload the file
+    final uploadTask = storageRef.putFile(file);
+
+    // Await the upload to complete
+    final snapshot = await uploadTask.whenComplete(() => {});
+
+    // Get the download URL
+    final downloadUrl = await snapshot.ref.getDownloadURL();
+    
+    print('File uploaded successfully: $downloadUrl');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Upload successful!')),
+    );
+    
+    return downloadUrl;
+  } on FirebaseException catch (e) {
+    print('Error uploading file to Firebase Storage: ${e.message}');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error uploading file: ${e.code}')),
+    );
+    return null;
+  }
+}
+
+/// Saves the file metadata to a new collection in Firestore.
+Future<void> saveUploadedFileMetadata({
+  required BuildContext context, // Added BuildContext parameter
+  required String downloadUrl,
+  required String fileType,
+}) async {
+  final user = currentUser;
+  if (user == null) return;
+
+  try {
+    // Create a new document in an 'uploaded_files' collection
+    await FirebaseFirestore.instance.collection('uploaded_files').add({
+      'user_id': user.uid,
+      'download_url': downloadUrl,
+      'file_type': fileType,
+      'uploaded_at': FieldValue.serverTimestamp(),
+    });
+    print('File metadata saved to Firestore.');
+  } catch (e) {
+    print('Error saving metadata to Firestore: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not save file details.')),
     );
   }
 }
