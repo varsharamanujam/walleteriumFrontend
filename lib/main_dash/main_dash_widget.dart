@@ -1,5 +1,7 @@
 // In lib/main_dash/main_dash_widget.dart
 
+import 'package:walleterium/main_dash/wallet_sync_button.dart';
+
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -429,6 +431,11 @@ class _MainDashWidgetState extends State<MainDashWidget> {
               ],
             ),
           ),
+          // --- Wallet Sync Button ---
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          //   child: WalletSyncButton(),
+          // ),
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(16.0, 24.0, 0.0, 0.0),
             child: Text(

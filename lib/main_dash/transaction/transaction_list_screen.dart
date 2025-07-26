@@ -212,9 +212,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   List<Map<String, dynamic>> transactions = List.from(sampleTransactions);
   List<Map<String, dynamic>> filtered = [];
   Map<String, dynamic> appliedFilters = {};
-  String? sortBy;
+  List<String> sortBy = [];
   bool sortAsc = true;
-  String? groupBy;
+  List<String> groupBy = [];
 
   @override
   void initState() {
@@ -240,16 +240,16 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   void _applyFiltersSortGroup() {
     List<Map<String, dynamic>> temp = List.from(transactions);
 
-    // Apply filters (support nested fields)
+    // Apply all filters (support nested fields)
     appliedFilters.forEach((field, value) {
       temp = temp.where((t) => _getNestedField(t, field) == value).toList();
     });
 
-    // Sort (support nested fields)
-    if (sortBy != null) {
+    // Apply all sorts (support nested fields, stable sort)
+    for (final field in sortBy.reversed) {
       temp.sort((a, b) {
-        final va = _getNestedField(a, sortBy!);
-        final vb = _getNestedField(b, sortBy!);
+        final va = _getNestedField(a, field);
+        final vb = _getNestedField(b, field);
         if (va is Comparable && vb is Comparable) {
           return sortAsc ? va.compareTo(vb) : vb.compareTo(va);
         }
@@ -262,6 +262,21 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     });
   }
 
+  // Helper: Get a user-friendly label for a field (handles nested fields)
+  String _prettyFieldLabel(String field) {
+    if (field.contains('.')) {
+      return field.split('.').map((s) => s[0].toUpperCase() + s.substring(1).replaceAll('_', ' ')).join(' > ');
+    }
+    return field[0].toUpperCase() + field.substring(1).replaceAll('_', ' ');
+  }
+
+  // Helper: Detect if a field is boolean by checking all values in transactions
+  bool _isBooleanField(String field) {
+    final vals = transactions.map((t) => _getNestedField(t, field)).where((v) => v != null).toSet();
+    if (vals.isEmpty) return false;
+    return vals.every((v) => v is bool);
+  }
+
   void _showFilterSortSheet() {
     showModalBottomSheet(
       context: context,
@@ -270,93 +285,289 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         return DraggableScrollableSheet(
           expand: false,
           builder: (context, scrollController) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ListView(
-                controller: scrollController,
-                children: [
-                  Text("Filters", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Wrap(
-                    spacing: 8,
-                    children: filterFields.map((field) {
-                      return DropdownButton<String>(
-                        hint: Text(field),
-                        value: appliedFilters[field],
-                        items: [
-                          ...{...transactions.map((t) => t[field]?.toString() ?? '')}
-                        ].where((v) => v.isNotEmpty).map((v) {
-                          return DropdownMenuItem(
-                            value: v,
-                            child: Text(v),
+            return StatefulBuilder(
+              builder: (context, setModalState) {
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ListView(
+                    controller: scrollController,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Filters", style: TextStyle(fontWeight: FontWeight.bold)),
+                          if (appliedFilters.isNotEmpty)
+                            TextButton.icon(
+                              icon: Icon(Icons.clear_all),
+                              label: Text("Clear All"),
+                              onPressed: () {
+                                setState(() {
+                                  appliedFilters.clear();
+                                  _applyFiltersSortGroup();
+                                });
+                                setModalState(() {});
+                              },
+                            ),
+                        ],
+                      ),
+                      if (appliedFilters.isNotEmpty)
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: appliedFilters.entries.map((e) => Padding(
+                              padding: const EdgeInsets.only(right: 6.0),
+                              child: Chip(
+                                label: Text("${_prettyFieldLabel(e.key)}: ${e.value}"),
+                                deleteIcon: Icon(Icons.close),
+                                onDeleted: () {
+                                  setState(() {
+                                    appliedFilters.remove(e.key);
+                                    _applyFiltersSortGroup();
+                                  });
+                                  setModalState(() {});
+                                },
+                              ),
+                            )).toList(),
+                          ),
+                        ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: filterFields.map((field) {
+                          if (_isBooleanField(field)) {
+                            // Show as toggle chips for true/false
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ChoiceChip(
+                                  label: Row(children: [Icon(Icons.check, color: Colors.green), SizedBox(width: 4), Text(_prettyFieldLabel(field) + ': Yes')]),
+                                  selected: appliedFilters[field] == true,
+                                  onSelected: (selected) {
+                                    setState(() {
+                                      if (selected) {
+                                        appliedFilters[field] = true;
+                                      } else {
+                                        appliedFilters.remove(field);
+                                      }
+                                      _applyFiltersSortGroup();
+                                    });
+                                    setModalState(() {});
+                                  },
+                                  selectedColor: Colors.green[100],
+                                  showCheckmark: true,
+                                ),
+                                SizedBox(width: 4),
+                                ChoiceChip(
+                                  label: Row(children: [Icon(Icons.close, color: Colors.red), SizedBox(width: 4), Text(_prettyFieldLabel(field) + ': No')]),
+                                  selected: appliedFilters[field] == false,
+                                  onSelected: (selected) {
+                                    setState(() {
+                                      if (selected) {
+                                        appliedFilters[field] = false;
+                                      } else {
+                                        appliedFilters.remove(field);
+                                      }
+                                      _applyFiltersSortGroup();
+                                    });
+                                    setModalState(() {});
+                                  },
+                                  selectedColor: Colors.red[100],
+                                  showCheckmark: true,
+                                ),
+                              ],
+                            );
+                          } else {
+                            // Show as dropdown for non-boolean fields
+                            final values = [
+                              '',
+                              ...{...transactions.map((t) => _getNestedField(t, field)?.toString() ?? '')}
+                            ].where((v) => v.isNotEmpty).toSet().toList();
+                            final isDisabled = values.isEmpty;
+                            return DropdownButton<String>(
+                              hint: Text(
+                                _prettyFieldLabel(field),
+                                style: isDisabled ? TextStyle(color: Colors.grey) : null,
+                              ),
+                              value: isDisabled ? null : appliedFilters[field],
+                              items: isDisabled
+                                  ? [DropdownMenuItem(value: '', child: Text('No values', style: TextStyle(color: Colors.grey[400])))]
+                                  : [
+                                      DropdownMenuItem(value: '', child: Text('Unset')),
+                                      ...values.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                                    ],
+                              onChanged: isDisabled
+                                  ? null
+                                  : (val) {
+                                      setState(() {
+                                        if (val == null || val.isEmpty) {
+                                          appliedFilters.remove(field);
+                                        } else {
+                                          appliedFilters[field] = val;
+                                        }
+                                        _applyFiltersSortGroup();
+                                      });
+                                      setModalState(() {});
+                                    },
+                              disabledHint: Text(_prettyFieldLabel(field), style: TextStyle(color: Colors.grey)),
+                            );
+                          }
+                        }).toList(),
+                      ),
+                      SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Sort By", style: TextStyle(fontWeight: FontWeight.bold)),
+                          if (sortBy.isNotEmpty)
+                            TextButton.icon(
+                              icon: Icon(Icons.clear_all),
+                              label: Text("Clear All"),
+                              onPressed: () {
+                                setState(() {
+                                  sortBy.clear();
+                                  _applyFiltersSortGroup();
+                                });
+                                setModalState(() {});
+                              },
+                            ),
+                        ],
+                      ),
+                      if (sortBy.isNotEmpty)
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: sortBy.map((field) => Padding(
+                              padding: const EdgeInsets.only(right: 6.0),
+                              child: Chip(
+                                label: Text(field),
+                                deleteIcon: Icon(Icons.close),
+                                onDeleted: () {
+                                  setState(() {
+                                    sortBy.remove(field);
+                                    _applyFiltersSortGroup();
+                                  });
+                                  setModalState(() {});
+                                },
+                              ),
+                            )).toList(),
+                          ),
+                        ),
+                      Wrap(
+                        spacing: 8,
+                        children: sortFields.map((field) {
+                          final hasValues = transactions.any((t) => _getNestedField(t, field) != null && _getNestedField(t, field).toString().isNotEmpty);
+                          return ChoiceChip(
+                            label: Text(
+                              field,
+                              style: !hasValues ? TextStyle(color: Colors.grey) : null,
+                            ),
+                            selected: sortBy.contains(field),
+                            onSelected: !hasValues
+                                ? null
+                                : (selected) {
+                                    setState(() {
+                                      if (selected) {
+                                        if (!sortBy.contains(field)) sortBy.add(field);
+                                      } else {
+                                        sortBy.remove(field);
+                                      }
+                                      _applyFiltersSortGroup();
+                                    });
+                                    setModalState(() {});
+                                  },
+                            selectedColor: Colors.blue[100],
+                            showCheckmark: true,
+                            disabledColor: Colors.grey[200],
                           );
                         }).toList(),
-                        onChanged: (val) {
-                          setState(() {
-                            if (val == null || val.isEmpty) {
-                              appliedFilters.remove(field);
-                            } else {
-                              appliedFilters[field] = val;
-                            }
-                            _applyFiltersSortGroup();
-                          });
-                          Navigator.pop(context);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  SizedBox(height: 16),
-                  Text("Sort By", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Wrap(
-                    spacing: 8,
-                    children: sortFields.map((field) {
-                      return ChoiceChip(
-                        label: Text(field),
-                        selected: sortBy == field,
-                        onSelected: (selected) {
-                          setState(() {
-                            sortBy = selected ? field : null;
-                            _applyFiltersSortGroup();
-                          });
-                          Navigator.pop(context);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  Row(
-                    children: [
-                      Text("Ascending"),
-                      Switch(
-                        value: sortAsc,
-                        onChanged: (v) {
-                          setState(() {
-                            sortAsc = v;
-                            _applyFiltersSortGroup();
-                          });
-                          Navigator.pop(context);
-                        },
+                      ),
+                      Row(
+                        children: [
+                          Text("Ascending"),
+                          Switch(
+                            value: sortAsc,
+                            onChanged: (v) {
+                              setState(() {
+                                sortAsc = v;
+                                _applyFiltersSortGroup();
+                              });
+                              setModalState(() {});
+                            },
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Group By", style: TextStyle(fontWeight: FontWeight.bold)),
+                          if (groupBy.isNotEmpty)
+                            TextButton.icon(
+                              icon: Icon(Icons.clear_all),
+                              label: Text("Clear All"),
+                              onPressed: () {
+                                setState(() {
+                                  groupBy.clear();
+                                  _applyFiltersSortGroup();
+                                });
+                                setModalState(() {});
+                              },
+                            ),
+                        ],
+                      ),
+                      if (groupBy.isNotEmpty)
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: groupBy.map((field) => Padding(
+                              padding: const EdgeInsets.only(right: 6.0),
+                              child: Chip(
+                                label: Text(field),
+                                deleteIcon: Icon(Icons.close),
+                                onDeleted: () {
+                                  setState(() {
+                                    groupBy.remove(field);
+                                    _applyFiltersSortGroup();
+                                  });
+                                  setModalState(() {});
+                                },
+                              ),
+                            )).toList(),
+                          ),
+                        ),
+                      Wrap(
+                        spacing: 8,
+                        children: groupFields.map((field) {
+                          final hasValues = transactions.any((t) => _getNestedField(t, field) != null && _getNestedField(t, field).toString().isNotEmpty);
+                          return ChoiceChip(
+                            label: Text(
+                              field,
+                              style: !hasValues ? TextStyle(color: Colors.grey) : null,
+                            ),
+                            selected: groupBy.contains(field),
+                            onSelected: !hasValues
+                                ? null
+                                : (selected) {
+                                    setState(() {
+                                      if (selected) {
+                                        if (!groupBy.contains(field)) groupBy.add(field);
+                                      } else {
+                                        groupBy.remove(field);
+                                      }
+                                      _applyFiltersSortGroup();
+                                    });
+                                    setModalState(() {});
+                                  },
+                            selectedColor: Colors.green[100],
+                            showCheckmark: true,
+                            disabledColor: Colors.grey[200],
+                          );
+                        }).toList(),
                       ),
                     ],
                   ),
-                  SizedBox(height: 16),
-                  Text("Group By", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Wrap(
-                    spacing: 8,
-                    children: groupFields.map((field) {
-                      return ChoiceChip(
-                        label: Text(field),
-                        selected: groupBy == field,
-                        onSelected: (selected) {
-                          setState(() {
-                            groupBy = selected ? field : null;
-                            _applyFiltersSortGroup();
-                          });
-                          Navigator.pop(context);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
@@ -615,15 +826,17 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Grouping logic
+    // Grouping logic (support multiple group fields)
     Map<String, List<Map<String, dynamic>>> grouped = {};
-    if (groupBy != null) {
+    if (groupBy.isNotEmpty) {
       for (var tx in filtered) {
-        final rawKey = _getNestedField(tx, groupBy!);
-        final key = (rawKey == null || rawKey.toString() == 'null' || rawKey.toString().isEmpty)
-            ? 'Uncategorized'
-            : rawKey.toString();
-        grouped.putIfAbsent(key, () => []).add(tx);
+        final keys = groupBy.map((g) {
+          final rawKey = _getNestedField(tx, g);
+          return (rawKey == null || rawKey.toString() == 'null' || rawKey.toString().isEmpty)
+              ? 'Uncategorized'
+              : rawKey.toString();
+        }).join(' | ');
+        grouped.putIfAbsent(keys, () => []).add(tx);
       }
     }
 
@@ -645,13 +858,13 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.only(top: 8.0),
-        child: groupBy == null
+        child: groupBy.isEmpty
             ? ListView.builder(
                 itemCount: filtered.length,
                 itemBuilder: (ctx, i) => TransactionCardWidget(
                   transaction: filtered[i],
                   onDelete: () => _deleteTransaction(i),
-                  onEdit: () {}, // Implement edit logic as needed
+                  onEdit: () {},
                 ),
               )
             : ListView(
@@ -662,7 +875,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
                         child: Text(
-                          '${groupBy}: ${entry.key}',
+                          '${groupBy.join(' | ')}: ${entry.key}',
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
