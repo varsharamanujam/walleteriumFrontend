@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:walleterium/backend/schema/wallet_user_record.dart';
 import '../auth/firebase_auth/auth_util.dart';
 
 import '../flutter_flow/flutter_flow_util.dart';
 import 'schema/util/firestore_util.dart';
 
 import 'schema/user_profiles_record.dart';
+import 'schema/transactions_record.dart';
 
 export 'dart:async' show StreamSubscription;
 export 'package:cloud_firestore/cloud_firestore.dart' hide Order;
@@ -15,6 +17,11 @@ export 'schema/util/firestore_util.dart';
 export 'schema/util/schema_util.dart';
 
 export 'schema/user_profiles_record.dart';
+export 'schema/user_profiles_record.dart';
+export 'schema/wallet_user_record.dart';
+export 'schema/user_accounts_record.dart';
+export 'schema/user_assets_record.dart';
+export 'schema/transactions_record.dart';
 
 /// Functions to query UserProfilesRecords (as a Stream and as a Future).
 Future<int> queryUserProfilesRecordCount({
@@ -190,31 +197,25 @@ Future<FFFirestorePage<T>> queryCollectionPage<T>(
 
 // Creates a Firestore document representing the logged in user if it doesn't yet exist
 Future maybeCreateUser(User user) async {
-  final userRecord = UserProfilesRecord.collection.doc(user.uid);
+  final userRecord = WalletUsersRecord.collection.doc(user.uid);
   final userExists = await userRecord.get().then((u) => u.exists);
   if (userExists) {
-    currentUserDocument = await UserProfilesRecord.getDocumentOnce(userRecord);
     return;
   }
 
-  final userData = createUserProfilesRecordData(
-    email: user.email ??
-        FirebaseAuth.instance.currentUser?.email ??
-        user.providerData.firstOrNull?.email,
-    displayName:
-        user.displayName ?? FirebaseAuth.instance.currentUser?.displayName,
+  final userData = createWalletUsersRecordData(
+    email: user.email,
+    displayName: user.displayName,
     photoUrl: user.photoURL,
     uid: user.uid,
-    phoneNumber: user.phoneNumber,
-    createdTime: getCurrentTimestamp,
+    lastSeen: DateTime.now(),
+    onboardingCompleted: false,
   );
 
   await userRecord.set(userData);
-  currentUserDocument =
-      UserProfilesRecord.getDocumentFromData(userData, userRecord);
 }
 
 Future updateUserDocument({String? email}) async {
   await currentUserDocument?.reference
-      .update(createUserProfilesRecordData(email: email));
+      .update(createWalletUsersRecordData(email: email));
 }

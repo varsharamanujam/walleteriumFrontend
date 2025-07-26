@@ -113,9 +113,26 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: MainDashWidget.routeName,
           path: MainDashWidget.routePath,
           builder: (context, params) => MainDashWidget(),
-        )
-      ].map((r) => r.toRoute(appStateNotifier)).toList(),
-    );
+        ),
+        FFRoute(
+          name: SpendingAnalyzerScreen.routeName,
+          path: '${SpendingAnalyzerScreen.routePath}/:accountId',
+          builder: (context, params) => SpendingAnalyzerScreen(
+            accountId: params.getParam('accountId', ParamType.String)!,
+          ),
+        ),
+        FFRoute(
+          name: WealthHubScreen.routeName,
+          path: WealthHubScreen.routePath, // Path no longer needs a parameter
+          builder: (context, params) => WealthHubScreen(),
+        ),
+        FFRoute(
+          name: AllTransactionsScreen.routeName,
+          path: AllTransactionsScreen.routePath,
+          builder: (context, params) => AllTransactionsScreen(),
+        ),
+  ].map((r) => r.toRoute(appStateNotifier)).toList(),
+);
 
 extension NavParamExtensions on Map<String, String?> {
   Map<String, String> get withoutNulls => Map.fromEntries(

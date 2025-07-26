@@ -1,22 +1,23 @@
-import '/flutter_flow/flutter_flow_choice_chips.dart';
-import '/flutter_flow/flutter_flow_icon_button.dart';
+// In lib/main_dash/main_dash_widget.dart
+
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import '/flutter_flow/form_field_controller.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'main_dash_model.dart';
 export 'main_dash_model.dart';
 
-// --- FIX START: Added necessary imports ---
+
+import 'notification_card_widget.dart';
+import 'transaction/transaction_list_screen.dart'; // For actionable notification navigation
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/index.dart';
-// --- FIX END ---
+import '/backend/backend.dart';
+import 'package:walleterium/feature1/settings_screen.dart'; // Ensure this import is correct
 
 class MainDashWidget extends StatefulWidget {
   const MainDashWidget({super.key});
@@ -32,376 +33,529 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   late MainDashModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // --- FIX START: Added state variables for data fetching ---
   bool _isLoading = true;
-  Map<String, dynamic>? _userProfileData;
-  // --- FIX END ---
+  WalletUsersRecord? _walletUser;
+  List<UserAccountsRecord> _accounts = [];
+  List<UserAssetsRecord> _assets = [];
+
+  // Sample notification JSONs for demonstration
+  final List<Map<String, dynamic>> _sampleNotifications = [
+    {
+      'text': 'Your portfolio grew by 5% this week!',
+      'icon': 'success',
+      'details': 'Check out the new assets added to your portfolio. Tap to view more.'
+    },
+    {
+      'text': 'Scheduled maintenance on 28th July',
+      'icon': 'warning',
+      'details': 'Some features may be unavailable during 2am-4am IST.'
+    },
+    {
+      'text': 'Verify your email address',
+      'icon': 'info',
+      'details': 'Please verify your email to unlock all features.'
+    },
+    // --- Actionable notification for UI testing ---
+    {
+      'text': 'View sample transactions',
+      'icon': 'info',
+      'details': 'Tap to view the transaction list UI example.',
+      'action': 'show_transactions',
+    },
+  ];
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => MainDashModel());
-    
-    // --- FIX START: Call the function to fetch data ---
-    _fetchUserProfileData();
-    // --- FIX END ---
-
+    _fetchDashboardData();
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
 
-  // --- FIX START: Added the data fetching function ---
-  Future<void> _fetchUserProfileData() async {
+  Future<void> _fetchDashboardData() async {
+	// ... (This function remains the same)									   
     final user = currentUser;
     if (user == null) {
       context.goNamed(AuthHubScreenWidget.routeName);
       return;
     }
 
-    final docRef =
-        FirebaseFirestore.instance.collection('user_profiles').doc(user.uid);
-    final docSnapshot = await docRef.get();
+    try {
+      final accountsFuture = UserAccountsRecord.collection.where('user_id', isEqualTo: user.uid).get();
+      final assetsFuture = UserAssetsRecord.collection.where('user_id', isEqualTo: user.uid).get();
+      final walletUserFuture = WalletUsersRecord.collection.doc(user.uid).get();
+      
+      final results = await Future.wait([
+        accountsFuture,
+        assetsFuture,
+        walletUserFuture,
+      ]);
 
-    if (mounted) {
-      if (docSnapshot.exists) {
+      final accountsSnapshot = results[0] as QuerySnapshot<Map<String, dynamic>>;
+      final assetsSnapshot = results[1] as QuerySnapshot<Map<String, dynamic>>;
+      final walletUserSnapshot = results[2] as DocumentSnapshot<Map<String, dynamic>>;
+
+      if (mounted) {
         setState(() {
-          _userProfileData = docSnapshot.data();
+          _accounts = accountsSnapshot.docs
+              .map((doc) => UserAccountsRecord.fromSnapshot(doc))
+              .toList();
+          _accounts.sort((a, b) => a.accountName.compareTo(b.accountName));
+
+          _assets = assetsSnapshot.docs
+              .map((doc) => UserAssetsRecord.fromSnapshot(doc))
+              .toList();
+          
+          if(walletUserSnapshot.exists) {
+            _walletUser = WalletUsersRecord.fromSnapshot(walletUserSnapshot);
+          }
+          
           _isLoading = false;
         });
-      } else {
+      }
+    } catch (e) {
+      print('Failed to fetch dashboard data: $e');
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        print("Error: User profile not found!");
+         ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not load dashboard data.')),
+        );
       }
     }
-  }
-  // --- FIX END ---
-
-  @override
-  void dispose() {
-    _model.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
+	// ... (This function remains the same)									   
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+      appBar: AppBar(
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: PreferredSize(
-          preferredSize: Size.fromHeight(64.0),
-          child: AppBar(
-            backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-            automaticallyImplyLeading: false,
-            title: Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Total asset value',
-                  style: FlutterFlowTheme.of(context).labelMedium.override(
-                        fontFamily: GoogleFonts.inter().fontFamily,
-                        letterSpacing: 0.0,
-                      ),
-                ),
-                Text(
-                  '\$244,204',
-                  style: FlutterFlowTheme.of(context).displaySmall.override(
-                        fontFamily: GoogleFonts.interTight().fontFamily,
-                        letterSpacing: 0.0,
-                      ),
-                ),
-              ],
+        automaticallyImplyLeading: false,
+        title: _isLoading ? Container() : _buildWelcomeHeader(),
+        actions: [
+          // Settings button added to the AppBar actions
+          IconButton(
+            icon: const Icon(
+              Icons.settings,
+              color: Colors.black, // Set the icon color to black
             ),
-            actions: [
-              Padding(
-                padding: EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 16.0, 8.0),
-                child: FlutterFlowIconButton(
-                  borderColor: FlutterFlowTheme.of(context).primary,
-                  borderRadius: 12.0,
-                  borderWidth: 2.0,
-                  buttonSize: 40.0,
-                  fillColor: FlutterFlowTheme.of(context).accent1,
-                  icon: Icon(
-                    Icons.wallet_outlined,
-                    color: FlutterFlowTheme.of(context).primaryText,
-                    size: 24.0,
+            tooltip: 'Settings',
+            onPressed: () async { // Made onPressed async to await the result
+              // Ensure currentUser is not null before accessing its properties
+              final user = currentUser;
+              if (user == null) {
+                print('User is null, cannot open settings.');
+                return;
+              }
+              // Navigate to the SettingsScreen and await its result
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SettingsScreen(
+                    // Use _walletUser's displayName if available, fallback to user.displayName
+                    displayName: _walletUser?.displayName ?? user.displayName ?? '',
+                    email: user.email ?? '', // Use user.email
                   ),
-                  onPressed: () {
-                    print('IconButton pressed ...');
-                  },
                 ),
-              ),
-            ],
-            centerTitle: false,
-            elevation: 0.0,
+              );
+
+              // If settings were saved (result is not null and contains displayName),
+              // then refresh the dashboard data to reflect the changes.
+              if (result != null && result is Map<String, dynamic> && result.containsKey('displayName')) {
+                _fetchDashboardData(); // Re-fetch data to update display name
+              }
+            },
           ),
-        ),
-        body: SafeArea(
-          top: true,
-          // --- FIX START: Replaced direct UI with a conditional builder ---
-          child: _isLoading
-              ? Center(child: CircularProgressIndicator())
-              : _userProfileData == null
-                  ? Center(child: Text('User profile could not be loaded.'))
-                  : _buildDashboardUI(),
-          // --- FIX END ---
-        ),
+        ],
+        centerTitle: false,
+        elevation: 0.0,
+      ),
+      body: SafeArea(
+        top: true,
+        child: _isLoading
+            ? Center(child: CircularProgressIndicator())
+            : _walletUser == null
+                ? Center(child: Text('User data could not be loaded.'))
+                : _buildDashboardUI(),
       ),
     );
   }
 
-  // --- FIX START: Created a new build method for the main UI ---
-  Widget _buildDashboardUI() {
-    // Safely get preferred sectors, handling the case where it might be null
-    final sectors =
-        _userProfileData!['preferred_sectors'] as List<dynamic>? ?? [];
+  Widget _buildWelcomeHeader() {
+    String personaTitle = "Investor";
+    final userPersona = _walletUser?.persona;
+    if (userPersona != null && userPersona.isNotEmpty) {
+      final regex = RegExp(
+        r'\b(aggressive investor|long-term investor|tech professional|visionary|budgetor)\b',
+        caseSensitive: false,
+      );
+      final match = regex.firstMatch(userPersona);
+      if (match != null) {
+        final foundTitle = match.group(0)!;
+        personaTitle = foundTitle[0].toUpperCase() + foundTitle.substring(1);
+      }
+    }
 
+    return Column(
+      mainAxisSize: MainAxisSize.max,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Hey ${_walletUser?.displayName ?? 'User'}!',
+          style: FlutterFlowTheme.of(context).headlineSmall,
+        ),
+        Text(
+          'The $personaTitle',
+          style: FlutterFlowTheme.of(context).labelMedium,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDashboardUI() {
+	// ... (This function remains the same)									   
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- NEW SECTION: Displaying the fetched onboarding data ---
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Row(
               children: [
-                Text(
-                  'My Onboarding Profile',
-                  style: FlutterFlowTheme.of(context).titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: FlutterFlowTheme.of(context).secondaryBackground,
-                    borderRadius: BorderRadius.circular(12.0),
-                    border: Border.all(
-                      color: FlutterFlowTheme.of(context).alternate,
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        _buildDetailRow(
-                          icon: Icons.trending_up,
-                          title: 'Investment Style',
-                          value: '${_userProfileData!['investment_style']}',
-                        ),
-                        const Divider(),
-                        _buildDetailRow(
-                          icon: Icons.business_center,
-                          title: 'Preferred Sectors',
-                          value: sectors.join(', '),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                Expanded(child: _buildAvailableBalanceCard()),
+                Expanded(child: _buildAssetsCard()),
               ],
             ),
           ),
-          // --- END OF NEW SECTION ---
-
-          // --- Your existing UI starts here ---
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: 470.0,
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(16.0, 24.0, 0.0, 0.0),
+            child: Text(
+              'My Accounts',
+              style: FlutterFlowTheme.of(context).titleLarge,
             ),
-            decoration: BoxDecoration(),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Padding(
-                  padding:
-                      EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 0.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.max,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Icon(
-                            Icons.trending_up_rounded,
-                            color: FlutterFlowTheme.of(context).primary,
-                            size: 24.0,
-                          ),
-                          RichText(
-                            textScaler: MediaQuery.of(context).textScaler,
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: '2.54%',
-                                  style: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        fontFamily:
-                                            GoogleFonts.inter().fontFamily,
-                                        color:
-                                            FlutterFlowTheme.of(context).primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                TextSpan(
-                                  text: ' from last week',
-                                  style: TextStyle(),
-                                )
-                              ],
-                              style: FlutterFlowTheme.of(context)
-                                  .labelMedium
-                                  .override(
-                                    fontFamily: GoogleFonts.inter().fontFamily,
-                                    letterSpacing: 0.0,
-                                  ),
-                            ),
-                          ),
-                        ].divide(SizedBox(width: 8.0)),
-                      ),
-                      Padding(
-                        padding:
-                            EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 0.0),
-                        child: Text(
-                          'My Portfolio',
-                          style: FlutterFlowTheme.of(context)
-                              .titleLarge
-                              .override(
-                                fontFamily:
-                                    GoogleFonts.interTight().fontFamily,
-                                letterSpacing: 0.0,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 0.0),
-                  child: Container(
-                    width: double.infinity,
-                    height: 190.0,
-                    child: CarouselSlider(
-                      items: [
-                        // Your Carousel items here...
-                      ],
-                      carouselController: _model.carouselController ??=
-                          CarouselSliderController(),
-                      options: CarouselOptions(
-                        initialPage: 0,
-                        viewportFraction: 0.8,
-                        disableCenter: true,
-                        enlargeCenterPage: true,
-                        enlargeFactor: 0.25,
-                        enableInfiniteScroll: true,
-                        scrollDirection: Axis.horizontal,
-                        autoPlay: false,
-                        onPageChanged: (index, _) =>
-                            _model.carouselCurrentIndex = index,
-                      ),
-                    ),
-                  ),
-                ),
-                // The rest of your UI (Transaction History, etc.) continues here...
-              ],
-            ),
+          ),
+          _buildAccountsCarousel(),
+          _buildResetUserButton(),
+          // Notifications vertical stack below reset button
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+            child: _buildNotificationsStack(),
           ),
         ],
       ),
     );
   }
-  // --- END OF NEW BUILD METHOD ---
 
-  // --- FIX START: Added a helper widget to display data rows ---
-  Widget _buildDetailRow(
-      {required IconData icon,
-      required String title,
-      required String value}) {
+  Widget _buildNotificationsStack() {
+    if (_sampleNotifications.isEmpty) {
+      return SizedBox.shrink();
+    }
+    return Column(
+      children: _sampleNotifications.map((json) {
+        // If the notification has an 'action', make it tappable
+        if (json['action'] == 'show_transactions') {
+          return NotificationCardWidget(
+            data: json,
+            onTap: () {
+              // Navigate to the transaction list screen for UI testing
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) =>
+                      // Import path may need to be adjusted if you move files
+                      // ignore: prefer_const_constructors
+                      TransactionListScreen(),
+                ),
+              );
+            },
+          );
+        } else {
+          return NotificationCardWidget(data: json);
+        }
+      }).toList(),
+    );
+  }
+  
+  Widget _buildAvailableBalanceCard() {
+  final double totalBalance = _accounts.fold(0.0, (sum, account) => sum + account.currentBalance);
+  final formattedBalance = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalBalance);
+
+  return Card(
+    clipBehavior: Clip.antiAlias,
+    elevation: 2,
+    margin: const EdgeInsets.all(8.0),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: InkWell(
+      onTap: () {
+        context.pushNamed(AllTransactionsScreen.routeName);
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Available Balance',
+              style: FlutterFlowTheme.of(context).labelLarge,
+            ),
+            SizedBox(height: 8),
+            Text(
+              formattedBalance,
+              style: FlutterFlowTheme.of(context).titleLarge,
+            )
+          ],
+        ),
+      ),
+	),
+  );
+}
+
+  Widget _buildAssetsCard() {
+    final double totalAssets = _assets.fold(0.0, (sum, asset) => sum + asset.currentValue);
+    final formattedAssets = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalAssets);
+    
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      elevation: 2,
+      color: Color(0xFFE8F5E9),
+      margin: const EdgeInsets.all(8.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () {
+          print('Assets card tapped!');
+		  // Rule 2: Tapping on Assets takes us to the Wealth Hub screen																
+          context.pushNamed(WealthHubScreen.routeName);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Assets',
+                style: FlutterFlowTheme.of(context).labelLarge.override(
+                      fontFamily: 'Inter',
+                      color: FlutterFlowTheme.of(context).success,
+                    ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                formattedAssets,
+                style: FlutterFlowTheme.of(context).titleLarge.override(
+                      fontFamily: 'Inter',
+                      color: FlutterFlowTheme.of(context).success,
+                    ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountsCarousel() {
+	// ... (This function remains the same)									   
+    if (_accounts.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text('No accounts to display.'),
+        ),
+      );
+    }
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: FlutterFlowTheme.of(context).primary, size: 20.0),
-          const SizedBox(width: 16.0),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: FlutterFlowTheme.of(context).bodyLarge,
-                ),
-                const SizedBox(height: 4.0),
-                Text(
-                  value,
-                  style: FlutterFlowTheme.of(context).titleSmall.override(
-                        fontFamily:
-                            FlutterFlowTheme.of(context).titleSmallFamily,
-                        color: FlutterFlowTheme.of(context).primaryText,
-                      ),
-                ),
+      padding: EdgeInsetsDirectional.fromSTEB(0.0, 12.0, 0.0, 0.0),
+      child: Container(
+        width: double.infinity,
+        height: 170.0,
+        child: CarouselSlider.builder(
+          itemCount: _accounts.length,
+          itemBuilder: (context, index, realIndex) {
+            final account = _accounts[index];
+            return _buildAccountCard(account);
+          },
+          carouselController: _model.carouselController ??= CarouselSliderController(),
+          options: CarouselOptions(
+            initialPage: 0,
+            viewportFraction: 0.9,
+            disableCenter: false,
+            enlargeCenterPage: true,
+            enlargeFactor: 0.25,
+            enableInfiniteScroll: false,
+            scrollDirection: Axis.horizontal,
+            autoPlay: false,
+          ),
+        ),
+      ),
+    );
+  }
 
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: FFButtonWidget(
-                  onPressed: () async {
-                    // This is the reset logic
-                    final user = currentUser;
-                    if (user == null) return;
-
-                    // 1. Delete the detailed profile document
-                    await FirebaseFirestore.instance
-                        .collection('user_profiles')
-                        .doc(user.uid)
-                        .delete();
-
-                    // 2. Delete the basic wallet user document
-                    await FirebaseFirestore.instance
-                        .collection('wallet_user_collection')
-                        .doc(user.uid)
-                        .delete();
-                    
-                    // 3. Sign the user out
-                    await authManager.signOut();
-
-                    // 4. Go back to the login screen
-                    if (mounted) {
-                      context.goNamed(AuthHubScreenWidget.routeName);
-                    }
-                  },
-                  text: 'Log Out & Reset User',
-                  options: FFButtonOptions(
-                    width: double.infinity,
-                    height: 40,
-                    color: FlutterFlowTheme.of(context).error,
-                    textStyle: FlutterFlowTheme.of(context).titleSmall.override(
-                          fontFamily: FlutterFlowTheme.of(context).titleSmallFamily,
+  // --- UPDATED: Navigation logic is changed ---
+  Widget _buildAccountCard(UserAccountsRecord account) {
+    final balance = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(account.currentBalance);
+    final color = colorFromHex(account.accountColor) ?? FlutterFlowTheme.of(context).primary;
+    
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: 8.0),
+      child: InkWell(
+        onTap: () {
+          print('${account.accountName} card tapped!');
+          
+          if (account.accountType == 'Capital') {
+			// Rule 1: Capital account goes to the new All Transactions screen																  
+            context.pushNamed(AllTransactionsScreen.routeName);
+          } else {
+			// Rule 3: Debit/Cash accounts go to the specific Spending Analyzer																   
+            context.pushNamed(
+              SpendingAnalyzerScreen.routeName,
+              pathParameters: {
+                'accountId': account.reference.id,
+              },
+            );
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 4,
+                color: Color(0x33000000),
+                offset: Offset(0, 2),
+              )
+            ],
+          ),
+          child: Column(
+			// ... (The rest of the card's UI remains the same)												   
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                account.accountType.toUpperCase(),
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                      fontFamily: 'Inter',
+                      color: Colors.white.withOpacity(0.8),
+                      letterSpacing: 1.2,
+                    ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    account.accountName,
+                    style: FlutterFlowTheme.of(context).headlineSmall.override(
+                          fontFamily: 'Inter',
                           color: Colors.white,
                         ),
-                    elevation: 2,
-                    borderSide: BorderSide(
-                      color: Colors.transparent,
-                      width: 1,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      balance,
+                      style: FlutterFlowTheme.of(context).titleLarge.override(
+                            fontFamily: 'Inter',
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                    ),
+                  ),
+                ],
               ),
-              ],
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+  
+  Widget _buildResetUserButton() {
+	// ... (This function remains the same)									   
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: FFButtonWidget(
+        onPressed: () async {
+          final user = currentUser;
+          if (user == null) return;
+          
+          bool? confirm = await showDialog<bool>(
+            context: context,
+            builder: (alertDialogContext) {
+              return AlertDialog(
+                title: Text('Confirm Reset'),
+                content: Text('Are you sure you want to log out and delete all your data? This cannot be undone.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(alertDialogContext, false),
+                    child: Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(alertDialogContext, true),
+                    child: Text('Reset'),
+                  ),
+                ],
+              );
+            },
+          );
+
+          if (confirm != true) return;
+
+          final batch = FirebaseFirestore.instance.batch();
+
+          final accountsSnapshot = await FirebaseFirestore.instance.collection('user_accounts').where('user_id', isEqualTo: user.uid).get();
+          for (var doc in accountsSnapshot.docs) {
+            batch.delete(doc.reference);
+          }
+
+          final assetsSnapshot = await FirebaseFirestore.instance.collection('user_assets').where('user_id', isEqualTo: user.uid).get();
+          for (var doc in assetsSnapshot.docs) {
+            batch.delete(doc.reference);
+          }
+          
+          final walletUserRef = FirebaseFirestore.instance.collection('wallet_user_collection').doc(user.uid);
+          batch.delete(walletUserRef);
+
+          await batch.commit();
+          await authManager.signOut();
+
+          if (mounted) {
+            context.goNamed(AuthHubScreenWidget.routeName);
+          }
+        },
+        text: 'Log Out & Reset User',
+        options: FFButtonOptions(
+          width: double.infinity,
+          height: 40,
+          color: FlutterFlowTheme.of(context).error,
+          textStyle: FlutterFlowTheme.of(context)
+              .titleSmall
+              .override(
+                fontFamily: FlutterFlowTheme.of(context).titleSmallFamily,
+                color: Colors.white,
+              ),
+          elevation: 2,
+          borderSide: BorderSide(
+            color: Colors.transparent,
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+}
+
+Color? colorFromHex(String? hexColor) {
+  if (hexColor == null) return null;
+  final hexCode = hexColor.replaceAll('#', '');
+  if (hexCode.length == 6) {
+    return Color(int.parse('FF$hexCode', radix: 16));
+  }
+  return null;
 }

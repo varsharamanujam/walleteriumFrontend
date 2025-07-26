@@ -27,6 +27,7 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
+  http: ^0.13.3
   auto_size_text: 3.0.0
   cached_network_image: 3.4.1
   cached_network_image_platform_interface: 4.1.1
@@ -45,6 +46,7 @@ dependencies:
   firebase_performance: 0.10.1+7
   firebase_performance_platform_interface: 0.1.5+7
   firebase_performance_web: 0.1.7+13
+  fl_chart: ^0.68.0
   flutter_animate: 4.5.0
   flutter_cache_manager: 3.4.1
   font_awesome_flutter: 10.7.0

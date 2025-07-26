@@ -99,7 +99,8 @@ class _AIConversationalOnboardingScreenWidgetState
                       child: TextFormField(
                         controller: _model.userMessageInputTextController,
                         focusNode: _model.userMessageInputFocusNode,
-                        readOnly: true, // Making the text field non-editable for this example
+                        readOnly:
+                            true, // Making the text field non-editable for this example
                         decoration: InputDecoration(
                           filled: true,
                           fillColor:
@@ -112,36 +113,85 @@ class _AIConversationalOnboardingScreenWidgetState
                     ),
                   ),
                   Padding(
-                    padding:
-                        const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 10.0, 0.0),
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                        0.0, 0.0, 10.0, 0.0),
                     child: FFButtonWidget(
-                      // --- FIX START: This onPressed logic is now corrected ---
                       onPressed: () async {
-                        final user = currentUser;
-                        if (user == null) {
-                          context.goNamed(AuthHubScreenWidget.routeName);
-                          return;
-                        }
+                      final user = currentUser;
+                      if (user == null) {
+                        context.goNamed(AuthHubScreenWidget.routeName);
+                        return;
+                      }
 
-                        // 1. This map contains ONLY the onboarding data.
-                        final onboardingData = {
-                          'investment_style': 'Aggressive Growth',
-                          'preferred_sectors': ['Technology', 'Healthcare', 'Renewable Energy'],
-                          'communication_preference': 'Email',
-                          'financial_literacy_score': 85,
-                          'onboarding_complete_time': FieldValue.serverTimestamp(),
-                        };
-                        await FirebaseFirestore.instance
-                            .collection('user_profiles')
-                            .doc(user.uid)
-                            .set(onboardingData);
-                        final walletUserDocRef = FirebaseFirestore.instance
-                            .collection('wallet_user_collection')
-                            .doc(user.uid);
-                        await walletUserDocRef.update({'onboarding_completed': true});
+                      final batch = FirebaseFirestore.instance.batch();
+                      
+                      // --- Create references with unique IDs FIRST ---
+                      final hdfcAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
+                      final cashAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
+                      final vehicleAssetRef = FirebaseFirestore.instance.collection('user_assets').doc();
+                      final goldAssetRef = FirebaseFirestore.instance.collection('user_assets').doc(); //
+
+                      // --- Set Account Data ---
+                      batch.set(hdfcAccountRef, {
+                        'user_id': user.uid, 'account_name': 'HDFC Bank Savings', 'account_type': 'Debit',
+                        'current_balance': 125500.75, 'created_at': FieldValue.serverTimestamp(), 'account_color': '#1e90ff',
+                      });
+                      batch.set(cashAccountRef, {
+                        'user_id': user.uid, 'account_name': 'Cash Wallet', 'account_type': 'Cash',
+                        'current_balance': 8500.00, 'created_at': FieldValue.serverTimestamp(), 'account_color': '#32cd32',
+                      });
+
+                      // --- Set Asset Data ---
+                      batch.set(vehicleAssetRef, {
+                        'user_id': user.uid, 'asset_name': 'My Suzuki Swift', 'asset_type': 'Vehicle',
+                        'current_value': 680000.0, 'purchase_value': 820000.0,
+                        'purchase_date': Timestamp.fromDate(DateTime(2023, 5, 20)),
+                        'metadata': { 'make': 'Maruti Suzuki', 'model': 'Swift VXI', 'year': 2023 }
+                      });
+                      batch.set(goldAssetRef, {
+                        'user_id': user.uid, 'asset_name': 'Gold Bar', 'asset_type': 'Gold', //
+                        'current_value': 0.0, // This will be updated by live price in WealthHubScreen
+                        'purchase_value': 60000.0, // Assuming 10 grams purchased at 6000/gram
+                        'purchase_date': Timestamp.fromDate(DateTime(2024, 1, 15)), //
+                        'metadata': { 'weightInGrams': 10.0 } //
+                      });
+
+                      // --- Set Transaction Data (linked to HDFC account) ---
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 50000.0,
+                        'type': 'Income', 'description': 'Monthly Salary', 'category': 'Salary',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 1)),
+                      });
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 750.50,
+                        'type': 'Expense', 'description': 'Dinner at Toit', 'category': 'Food & Drink',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 20)),
+                      });
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 900.00,
+                        'type': 'Expense', 'description': 'movie', 'category': 'entertainment',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 20)),
+                      });
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 1500.00,
+                        'type': 'Expense', 'description': 'family outing', 'category': 'entertainment',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 20)),
+                      });
+
+                      // --- Finalize Onboarding ---
+                      final walletUserDocRef = FirebaseFirestore.instance.collection('wallet_user_collection').doc(user.uid);
+                      batch.update(walletUserDocRef, {
+                        'onboarding_completed': true,
+                        'persona': 'Budgetor',
+                      });
+
+                      try {
+                        await batch.commit();
                         context.goNamed(MainDashWidget.routeName);
-                      },
-                      // --- FIX END ---
+                      } catch (e) {
+                        print('Error committing batch write: $e');
+                      }
+                    },
                       text: 'Finish',
                       icon: const Icon(
                         Icons.send,
