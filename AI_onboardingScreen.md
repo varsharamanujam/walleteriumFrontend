@@ -166,3 +166,5 @@ Agent uses responses to assign personas like:
 - Let **Gemini-powered agent** parse, infer, and enhance inputs at runtime.
 - Use **RAG** to surface previously ingested context for coaching and clarifications.
 - Enable the LLM to suggest clarifications, tips, and prompt users for more data.
+
+https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&dark=auto#G1SDi5rRvnK1P0OSTCeodu7JmZJgt-pqTu
