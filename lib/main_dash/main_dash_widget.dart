@@ -6,6 +6,8 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart'; // Added import
+import 'package:file_picker/file_picker.dart'; // Added import
 import 'main_dash_model.dart';
 export 'main_dash_model.dart';
 
@@ -73,12 +75,14 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Future<void> _fetchDashboardData() async {
-	// ... (This function remains the same)									   
+    print('MainDashWidget: _fetchDashboardData called.');
     final user = currentUser;
     if (user == null) {
+      print('MainDashWidget: currentUser is null, redirecting to AuthHubScreen.');
       context.goNamed(AuthHubScreenWidget.routeName);
       return;
     }
+    print('MainDashWidget: currentUser is not null. UID: ${user.uid}');
 
     try {
       final accountsFuture = UserAccountsRecord.collection.where('user_id', isEqualTo: user.uid).get();
@@ -108,13 +112,16 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           
           if(walletUserSnapshot.exists) {
             _walletUser = WalletUsersRecord.fromSnapshot(walletUserSnapshot);
+            print('MainDashWidget: WalletUser data fetched. Onboarding completed: ${_walletUser?.onboardingCompleted}');
+          } else {
+            print('MainDashWidget: WalletUser document does not exist for UID: ${user.uid}');
           }
           
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('Failed to fetch dashboard data: $e');
+      print('MainDashWidget: Failed to fetch dashboard data: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -181,6 +188,92 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             : _walletUser == null
                 ? Center(child: Text('User data could not be loaded.'))
                 : _buildDashboardUI(),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            builder: (BuildContext context) {
+              return _buildUploadOptionsSheet(context);
+            },
+          );
+        },
+        backgroundColor: FlutterFlowTheme.of(context).primary,
+        child: Icon(Icons.upload_file, color: Colors.white),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: <Widget>[
+            IconButton(
+              icon: Icon(Icons.edit_note),
+              onPressed: () {
+                // Navigate to Budget & Goals Editing Page
+                Navigator.pushNamed(context, '/edit_budget_goals');
+              },
+            ),
+            SizedBox(width: 48), // The space for the FAB
+            IconButton(
+              icon: Icon(Icons.smart_toy),
+              onPressed: () {
+                // Navigate to AI Coach page
+                Navigator.pushNamed(context, '/ai_coach');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUploadOptionsSheet(BuildContext context) {
+    return Container(
+      child: Wrap(
+        children: <Widget>[
+          ListTile(
+            leading: Icon(Icons.image),
+            title: Text('Upload Image (Gallery)'),
+            onTap: () {
+              Navigator.pop(context);
+              // Your logic here for image gallery upload
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.video_library),
+            title: Text('Upload Video (Gallery)'),
+            onTap: () {
+              Navigator.pop(context);
+              // Your logic here for video gallery upload
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.camera_alt),
+            title: Text('Capture Image (Camera)'),
+            onTap: () {
+              Navigator.pop(context);
+              // Your logic here for capture image
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.videocam),
+            title: Text('Record Video (Camera)'),
+            onTap: () {
+              Navigator.pop(context);
+              // Your logic here for record video
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.picture_as_pdf),
+            title: Text('Upload PDF (File Picker)'),
+            onTap: () {
+              Navigator.pop(context);
+              // Your logic here for upload PDF
+            },
+          ),
+        ],
       ),
     );
   }
