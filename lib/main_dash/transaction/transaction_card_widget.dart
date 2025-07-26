@@ -59,6 +59,7 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Intuitive icon overlays for credit, debit, payment
                 Stack(
@@ -126,6 +127,7 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
                             fontSize: 16,
                             color: Colors.grey[800],
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       if (time != null && time.toString().trim().isNotEmpty)
                         Text(
@@ -134,52 +136,85 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
                             fontSize: 13,
                             color: Colors.grey[600],
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.edit, color: Colors.blueAccent),
-                  onPressed: widget.onEdit,
-                  tooltip: "Edit",
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete_outline, color: Colors.redAccent),
-                  onPressed: widget.onDelete,
-                  tooltip: "Delete",
+                // Action buttons in a Wrap for responsiveness
+                Wrap(
+                  spacing: 0,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.edit, color: Colors.blueAccent),
+                      onPressed: widget.onEdit,
+                      tooltip: "Edit",
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete_outline, color: Colors.redAccent),
+                      onPressed: widget.onDelete,
+                      tooltip: "Delete",
+                    ),
+                  ],
                 ),
               ],
             ),
-            Row(
-              children: [
-                if (isAsset)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0, right: 6.0),
-                    child: Chip(
-                      label: Text("Asset", style: TextStyle(color: Colors.white)),
-                      backgroundColor: Colors.amber[700],
-                      avatar: Icon(Icons.savings, color: Colors.white),
+            // Each chip (Asset, Recurring, Benefits) on its own line, with label overflow handling
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isAsset)
+                    Container(
+                      margin: EdgeInsets.only(bottom: 4),
+                      child: Chip(
+                        label: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width - 100),
+                          child: Text(
+                            "Asset",
+                            style: TextStyle(color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        backgroundColor: Colors.amber[700],
+                        avatar: Icon(Icons.savings, color: Colors.white),
+                      ),
                     ),
-                  ),
-                if (isRecurring)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0, right: 6.0),
-                    child: Chip(
-                      label: Text("Recurring", style: TextStyle(color: Colors.white)),
-                      backgroundColor: Colors.purple[400],
-                      avatar: Icon(Icons.repeat, color: Colors.white),
+                  if (isRecurring)
+                    Container(
+                      margin: EdgeInsets.only(bottom: 4),
+                      child: Chip(
+                        label: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width - 100),
+                          child: Text(
+                            "Recurring",
+                            style: TextStyle(color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        backgroundColor: Colors.purple[400],
+                        avatar: Icon(Icons.repeat, color: Colors.white),
+                      ),
                     ),
-                  ),
-                if (hasBenefits)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0, right: 6.0),
-                    child: Chip(
-                      label: Text("Benefits", style: TextStyle(color: Colors.white)),
-                      backgroundColor: Colors.teal[400],
-                      avatar: Icon(Icons.verified, color: Colors.white),
+                  if (hasBenefits)
+                    Container(
+                      margin: EdgeInsets.only(bottom: 4),
+                      child: Chip(
+                        label: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width - 100),
+                          child: Text(
+                            "Benefits",
+                            style: TextStyle(color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        backgroundColor: Colors.teal[400],
+                        avatar: Icon(Icons.verified, color: Colors.white),
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
             if (_expanded) ...[
               Divider(height: 24),
@@ -232,7 +267,7 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
     );
   }
 
-  // --- Recursively build details for nested fields ---
+  // --- Recursively build details for nested fields, with compact boolean formatting ---
   List<Widget> _buildDetailsList(Map<String, dynamic> map, {int depth = 0}) {
     List<Widget> widgets = [];
     map.forEach((key, value) {
@@ -243,33 +278,68 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
           widgets.add(Padding(
             padding: EdgeInsets.only(left: 8.0 * (depth + 1), top: 4, bottom: 2),
             child: Text(
-              "$key:",
+              _prettyFieldLabel(key) + ':',
               style: TextStyle(fontWeight: FontWeight.w600, color: Colors.blueGrey[700]),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ));
           widgets.addAll(_buildDetailsList(value, depth: depth + 1));
         }
       } else {
-        widgets.add(Padding(
-          padding: EdgeInsets.only(left: 8.0 * (depth + 1), top: 2, bottom: 2),
-          child: Row(
-            children: [
-              Text(
-                "$key: ",
-                style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey[700]),
-              ),
-              Expanded(
-                child: Text(
-                  "$value",
-                  style: TextStyle(color: Colors.grey[900]),
+        if (value is bool) {
+          // Only show a single row: short label and Switch (no extra label or value)
+          widgets.add(Padding(
+            padding: EdgeInsets.only(left: 8.0 * (depth + 1), top: 2, bottom: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  constraints: BoxConstraints(maxWidth: 90),
+                  child: Text(
+                    _prettyFieldLabel(key),
+                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ));
+                SizedBox(width: 8),
+                Switch(
+                  value: value,
+                  onChanged: null,
+                  activeColor: Colors.green,
+                  inactiveThumbColor: Colors.red,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ],
+            ),
+          ));
+        } else {
+          widgets.add(Padding(
+            padding: EdgeInsets.only(left: 8.0 * (depth + 1), top: 2, bottom: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _prettyFieldLabel(key) + ': ',
+                  style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                ),
+                Expanded(child: Text("$value", style: TextStyle(color: Colors.grey[900]))),
+              ],
+            ),
+          ));
+        }
       }
     });
     return widgets;
+  }
+
+  // Helper: Pretty label for nested fields
+  String _prettyFieldLabel(String field) {
+    if (field.contains('_')) {
+      return field.split('_').map((s) => s[0].toUpperCase() + s.substring(1)).join(' ');
+    }
+    return field[0].toUpperCase() + field.substring(1);
   }
 
   // --- Count non-empty, non-null details (excluding imageUrl) recursively ---
