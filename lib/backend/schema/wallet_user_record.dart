@@ -29,6 +29,16 @@ class WalletUsersRecord extends FirestoreRecord {
 
   String? _persona;
   String get persona => _persona ?? '';
+  bool hasPersona() => _persona != null; // Added hasPersona for consistency
+
+  // Add the assetPreferences field here
+  Map<String, dynamic> get assetPreferences => _assetPreferences ?? {}; // Default to empty map if null
+  bool hasAssetPreferences() => _assetPreferences != null;
+  Map<String, dynamic>? _assetPreferences;
+
+  String? _currency;
+  String get currency => _currency ?? '';
+
 
   WalletUsersRecord._(
     DocumentReference reference,
@@ -41,6 +51,8 @@ class WalletUsersRecord extends FirestoreRecord {
     _lastSeen = snapshotData['last_seen'] as DateTime?;
     _onboardingCompleted = snapshotData['onboarding_completed'] as bool?;
     _persona = snapshotData['persona'] as String?;
+    _assetPreferences = snapshotData['asset_preferences'] as Map<String, dynamic>?;
+    _currency = snapshotData['currency'] as String?;  
   }
 
   static CollectionReference get collection =>
@@ -66,7 +78,7 @@ class WalletUsersRecord extends FirestoreRecord {
 
   @override
   String toString() =>
-      'WalletUsersRecord(email: $email, displayName: $displayName, uid: $uid, photoUrl: $photoUrl, lastSeen: $lastSeen)';
+      'WalletUsersRecord(email: $email, displayName: $displayName, uid: $uid, photoUrl: $photoUrl, lastSeen: $lastSeen, persona: $persona, assetPreferences: $assetPreferences)';
 }
 
 Map<String, dynamic> createWalletUsersRecordData({
@@ -77,6 +89,8 @@ Map<String, dynamic> createWalletUsersRecordData({
   DateTime? lastSeen,
   bool? onboardingCompleted,
   String? persona,
+  // Add assetPreferences to the data creation function
+  Map<String, dynamic>? assetPreferences,
 }) {
   final firestoreData = <String, dynamic>{};
 
@@ -87,6 +101,21 @@ Map<String, dynamic> createWalletUsersRecordData({
   firestoreData['last_seen'] = lastSeen;
   firestoreData['onboarding_completed'] = onboardingCompleted ?? false;
   firestoreData['persona'] = persona;
+  // Add asset_preferences to the data
+  if (assetPreferences != null) {
+    firestoreData['asset_preferences'] = assetPreferences;
+  }
 
   return firestoreData;
+}
+
+// You might need a utility like this if it's not already present in your project
+// If not, you can define it, or directly cast/check for map type in fromSnapshot
+class CollectionsUtil {
+  static T? get<T>(Map<String, dynamic> data, String fieldName) {
+    if (data.containsKey(fieldName) && data[fieldName] is T) {
+      return data[fieldName] as T;
+    }
+    return null;
+  }
 }

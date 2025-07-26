@@ -13,6 +13,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/index.dart';
 import '/backend/backend.dart';
+import 'package:walleterium/feature1/settings_screen.dart'; // Ensure this import is correct
 
 class MainDashWidget extends StatefulWidget {
   const MainDashWidget({super.key});
@@ -42,7 +43,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Future<void> _fetchDashboardData() async {
-    // ... (This function remains the same)
     final user = currentUser;
     if (user == null) {
       context.goNamed(AuthHubScreenWidget.routeName);
@@ -97,14 +97,48 @@ class _MainDashWidgetState extends State<MainDashWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // ... (This function remains the same)
-     return Scaffold(
+    return Scaffold(
       key: scaffoldKey,
       backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
       appBar: AppBar(
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
         automaticallyImplyLeading: false,
         title: _isLoading ? Container() : _buildWelcomeHeader(),
+        actions: [
+          // Settings button added to the AppBar actions
+          IconButton(
+            icon: const Icon(
+              Icons.settings,
+              color: Colors.black, // Set the icon color to black
+            ),
+            tooltip: 'Settings',
+            onPressed: () async { // Made onPressed async to await the result
+              // Ensure currentUser is not null before accessing its properties
+              final user = currentUser;
+              if (user == null) {
+                print('User is null, cannot open settings.');
+                return;
+              }
+              // Navigate to the SettingsScreen and await its result
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SettingsScreen(
+                    // Use _walletUser's displayName if available, fallback to user.displayName
+                    displayName: _walletUser?.displayName ?? user.displayName ?? '',
+                    email: user.email ?? '', // Use user.email
+                  ),
+                ),
+              );
+
+              // If settings were saved (result is not null and contains displayName),
+              // then refresh the dashboard data to reflect the changes.
+              if (result != null && result is Map<String, dynamic> && result.containsKey('displayName')) {
+                _fetchDashboardData(); // Re-fetch data to update display name
+              }
+            },
+          ),
+        ],
         centerTitle: false,
         elevation: 0.0,
       ),
@@ -120,7 +154,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Widget _buildWelcomeHeader() {
-    // ... (This function remains the same)
     String personaTitle = "Investor";
     final userPersona = _walletUser?.persona;
     if (userPersona != null && userPersona.isNotEmpty) {
@@ -152,8 +185,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Widget _buildDashboardUI() {
-    // ... (This function remains the same)
-     return SingleChildScrollView(
+    return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,12 +242,10 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             )
           ],
         ),
-      ),
-    ),
-  );
-}
+      ),),
+    );
+  }
 
-  // --- UPDATED: Navigation logic is changed ---
   Widget _buildAssetsCard() {
     final double totalAssets = _assets.fold(0.0, (sum, asset) => sum + asset.currentValue);
     final formattedAssets = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalAssets);
@@ -229,7 +259,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
       child: InkWell(
         onTap: () {
           print('Assets card tapped!');
-          // Rule 2: Tapping on Assets takes us to the Wealth Hub screen
           context.pushNamed(WealthHubScreen.routeName);
         },
         child: Padding(
@@ -260,7 +289,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Widget _buildAccountsCarousel() {
-    // ... (This function remains the same)
     if (_accounts.isEmpty) {
       return Center(
         child: Padding(
@@ -296,7 +324,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
     );
   }
 
-  // --- UPDATED: Navigation logic is changed ---
   Widget _buildAccountCard(UserAccountsRecord account) {
     final balance = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(account.currentBalance);
     final color = colorFromHex(account.accountColor) ?? FlutterFlowTheme.of(context).primary;
@@ -309,10 +336,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           print('${account.accountName} card tapped!');
           
           if (account.accountType == 'Capital') {
-            // Rule 1: Capital account goes to the new All Transactions screen
             context.pushNamed(AllTransactionsScreen.routeName);
           } else {
-            // Rule 3: Debit/Cash accounts go to the specific Spending Analyzer
             context.pushNamed(
               SpendingAnalyzerScreen.routeName,
               pathParameters: {
@@ -336,7 +361,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             ],
           ),
           child: Column(
-            // ... (The rest of the card's UI remains the same)
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -378,7 +402,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
   
   Widget _buildResetUserButton() {
-    // ... (This function remains the same)
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: FFButtonWidget(

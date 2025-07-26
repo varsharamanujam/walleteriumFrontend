@@ -129,6 +129,7 @@ class _AIConversationalOnboardingScreenWidgetState
                       final hdfcAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
                       final cashAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
                       final vehicleAssetRef = FirebaseFirestore.instance.collection('user_assets').doc();
+                      final goldAssetRef = FirebaseFirestore.instance.collection('user_assets').doc(); //
 
                       // --- Set Account Data ---
                       batch.set(hdfcAccountRef, {
@@ -146,6 +147,13 @@ class _AIConversationalOnboardingScreenWidgetState
                         'current_value': 680000.0, 'purchase_value': 820000.0,
                         'purchase_date': Timestamp.fromDate(DateTime(2023, 5, 20)),
                         'metadata': { 'make': 'Maruti Suzuki', 'model': 'Swift VXI', 'year': 2023 }
+                      });
+                      batch.set(goldAssetRef, {
+                        'user_id': user.uid, 'asset_name': 'Gold Bar', 'asset_type': 'Gold', //
+                        'current_value': 0.0, // This will be updated by live price in WealthHubScreen
+                        'purchase_value': 60000.0, // Assuming 10 grams purchased at 6000/gram
+                        'purchase_date': Timestamp.fromDate(DateTime(2024, 1, 15)), //
+                        'metadata': { 'weightInGrams': 10.0 } //
                       });
 
                       // --- Set Transaction Data (linked to HDFC account) ---
