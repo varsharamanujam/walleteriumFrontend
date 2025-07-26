@@ -236,41 +236,78 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           ListTile(
             leading: Icon(Icons.image),
             title: Text('Upload Image (Gallery)'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              // Your logic here for image gallery upload
+              final ImagePicker picker = ImagePicker();
+              final XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
+              if (imageFile != null) {
+                print('Image uploaded from gallery: ${imageFile.path}');
+                // Your logic here to handle the uploaded image file
+              } else {
+                print('Image upload cancelled.');
+              }
             },
           ),
           ListTile(
             leading: Icon(Icons.video_library),
             title: Text('Upload Video (Gallery)'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              // Your logic here for video gallery upload
+              final ImagePicker picker = ImagePicker();
+              final XFile? videoFile = await picker.pickVideo(source: ImageSource.gallery);
+              if (videoFile != null) {
+                print('Video uploaded from gallery: ${videoFile.path}');
+                // Your logic here to handle the uploaded video file
+              } else {
+                print('Video upload cancelled.');
+              }
             },
           ),
           ListTile(
             leading: Icon(Icons.camera_alt),
             title: Text('Capture Image (Camera)'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              // Your logic here for capture image
+              final ImagePicker picker = ImagePicker();
+              final XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
+              if (imageFile != null) {
+                print('Image captured: ${imageFile.path}');
+                // Your logic here to handle the captured image file
+              } else {
+                print('Image capture cancelled.');
+              }
             },
           ),
           ListTile(
             leading: Icon(Icons.videocam),
             title: Text('Record Video (Camera)'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              // Your logic here for record video
+              final ImagePicker picker = ImagePicker();
+              final XFile? videoFile = await picker.pickVideo(source: ImageSource.camera);
+              if (videoFile != null) {
+                print('Video recorded: ${videoFile.path}');
+                // Your logic here to handle the recorded video file
+              } else {
+                print('Video recording cancelled.');
+              }
             },
           ),
           ListTile(
             leading: Icon(Icons.picture_as_pdf),
             title: Text('Upload PDF (File Picker)'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              // Your logic here for upload PDF
+              FilePickerResult? result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: ['pdf'],
+              );
+              if (result != null) {
+                print('PDF uploaded: ${result.files.single.path}');
+                // Your logic here to handle the uploaded PDF file
+              } else {
+                print('PDF upload cancelled.');
+              }
             },
           ),
         ],
