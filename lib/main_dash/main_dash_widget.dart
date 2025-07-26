@@ -283,6 +283,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                     downloadUrl: downloadUrl,
                     fileType: 'video',
                   );
+                  print('Video has been successfully uploaded.');
                 }
               } else {
                 print('Video upload cancelled.');
@@ -310,6 +311,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                     downloadUrl: downloadUrl,
                     fileType: 'image',
                   );
+                  print('Image has been successfully uploaded.');
                 }
               } else {
                 print('Image capture cancelled.');
@@ -337,6 +339,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                     downloadUrl: downloadUrl,
                     fileType: 'video',
                   );
+                  print('Video has been successfully uploaded.');
                 }
               } else {
                 print('Video recording cancelled.');
@@ -366,6 +369,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                     downloadUrl: downloadUrl,
                     fileType: 'pdf',
                   );
+                  print('PDF has been successfully uploaded.');
                 }
               } else {
                 print('PDF upload cancelled.');
