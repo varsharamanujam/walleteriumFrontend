@@ -9,6 +9,10 @@ import 'package:provider/provider.dart';
 import 'main_dash_model.dart';
 export 'main_dash_model.dart';
 
+
+import 'notification_card_widget.dart';
+import 'transaction/transaction_list_screen.dart'; // For actionable notification navigation
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/index.dart';
@@ -34,6 +38,32 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   List<UserAccountsRecord> _accounts = [];
   List<UserAssetsRecord> _assets = [];
 
+  // Sample notification JSONs for demonstration
+  final List<Map<String, dynamic>> _sampleNotifications = [
+    {
+      'text': 'Your portfolio grew by 5% this week!',
+      'icon': 'success',
+      'details': 'Check out the new assets added to your portfolio. Tap to view more.'
+    },
+    {
+      'text': 'Scheduled maintenance on 28th July',
+      'icon': 'warning',
+      'details': 'Some features may be unavailable during 2am-4am IST.'
+    },
+    {
+      'text': 'Verify your email address',
+      'icon': 'info',
+      'details': 'Please verify your email to unlock all features.'
+    },
+    // --- Actionable notification for UI testing ---
+    {
+      'text': 'View sample transactions',
+      'icon': 'info',
+      'details': 'Tap to view the transaction list UI example.',
+      'action': 'show_transactions',
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -43,6 +73,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Future<void> _fetchDashboardData() async {
+	// ... (This function remains the same)									   
     final user = currentUser;
     if (user == null) {
       context.goNamed(AuthHubScreenWidget.routeName);
@@ -97,6 +128,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
 
   @override
   Widget build(BuildContext context) {
+	// ... (This function remains the same)									   
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
@@ -185,6 +217,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Widget _buildDashboardUI() {
+	// ... (This function remains the same)									   
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.max,
@@ -208,8 +241,42 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           ),
           _buildAccountsCarousel(),
           _buildResetUserButton(),
+          // Notifications vertical stack below reset button
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+            child: _buildNotificationsStack(),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildNotificationsStack() {
+    if (_sampleNotifications.isEmpty) {
+      return SizedBox.shrink();
+    }
+    return Column(
+      children: _sampleNotifications.map((json) {
+        // If the notification has an 'action', make it tappable
+        if (json['action'] == 'show_transactions') {
+          return NotificationCardWidget(
+            data: json,
+            onTap: () {
+              // Navigate to the transaction list screen for UI testing
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) =>
+                      // Import path may need to be adjusted if you move files
+                      // ignore: prefer_const_constructors
+                      TransactionListScreen(),
+                ),
+              );
+            },
+          );
+        } else {
+          return NotificationCardWidget(data: json);
+        }
+      }).toList(),
     );
   }
   
@@ -242,9 +309,10 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             )
           ],
         ),
-      ),),
-    );
-  }
+      ),
+	),
+  );
+}
 
   Widget _buildAssetsCard() {
     final double totalAssets = _assets.fold(0.0, (sum, asset) => sum + asset.currentValue);
@@ -259,6 +327,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
       child: InkWell(
         onTap: () {
           print('Assets card tapped!');
+		  // Rule 2: Tapping on Assets takes us to the Wealth Hub screen																
           context.pushNamed(WealthHubScreen.routeName);
         },
         child: Padding(
@@ -289,6 +358,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Widget _buildAccountsCarousel() {
+	// ... (This function remains the same)									   
     if (_accounts.isEmpty) {
       return Center(
         child: Padding(
@@ -324,6 +394,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
     );
   }
 
+  // --- UPDATED: Navigation logic is changed ---
   Widget _buildAccountCard(UserAccountsRecord account) {
     final balance = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(account.currentBalance);
     final color = colorFromHex(account.accountColor) ?? FlutterFlowTheme.of(context).primary;
@@ -336,8 +407,10 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           print('${account.accountName} card tapped!');
           
           if (account.accountType == 'Capital') {
+			// Rule 1: Capital account goes to the new All Transactions screen																  
             context.pushNamed(AllTransactionsScreen.routeName);
           } else {
+			// Rule 3: Debit/Cash accounts go to the specific Spending Analyzer																   
             context.pushNamed(
               SpendingAnalyzerScreen.routeName,
               pathParameters: {
@@ -361,6 +434,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             ],
           ),
           child: Column(
+			// ... (The rest of the card's UI remains the same)												   
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -402,6 +476,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
   
   Widget _buildResetUserButton() {
+	// ... (This function remains the same)									   
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: FFButtonWidget(
