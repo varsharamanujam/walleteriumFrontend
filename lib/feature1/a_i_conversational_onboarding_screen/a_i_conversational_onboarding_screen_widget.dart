@@ -1,14 +1,17 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import 'dart:ui';
 import 'package:flutter/material.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart'; // Commented out as per request
-// import 'package:cloud_functions/cloud_functions.dart'; // Commented out as per request
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'a_i_conversational_onboarding_screen_model.dart';
+export 'a_i_conversational_onboarding_screen_model.dart';
+
+// Imports for Firebase
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '/auth/firebase_auth/auth_util.dart';
-// import '/index.dart'; // Commented out as per request
-// import 'a_i_conversational_onboarding_screen_model.dart'; // Commented out as per request
-// export 'a_i_conversational_onboarding_screen_model.dart'; // Commented out as per request
-import 'package:walleterium/feature1/a_i_conversational_onboarding_screen/dummyData.dart'; // Import dummyData.dart
+import '/index.dart';
 
 class AIConversationalOnboardingScreenWidget extends StatefulWidget {
   const AIConversationalOnboardingScreenWidget({super.key});
@@ -23,185 +26,187 @@ class AIConversationalOnboardingScreenWidget extends StatefulWidget {
 
 class _AIConversationalOnboardingScreenWidgetState
     extends State<AIConversationalOnboardingScreenWidget> {
-  // late AIConversationalOnboardingScreenModel _model; // Commented out as per request
+  late AIConversationalOnboardingScreenModel _model;
+
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  // String? _onboardingSessionId; // Commented out as per request
-  // bool _isLoading = true; // Commented out as per request
-  // bool _isConversationDone = false; // Commented out as per request
 
   @override
   void initState() {
     super.initState();
-    // _model = createModel(context, () => AIConversationalOnboardingScreenModel()); // Commented out as per request
-    // _model.userMessageInputTextController ??= TextEditingController(); // Commented out as per request
-    // _model.userMessageInputFocusNode ??= FocusNode(); // Commented out as per request
-    // _startOrResumeOnboarding(); // Commented out as per request
+    _model =
+        createModel(context, () => AIConversationalOnboardingScreenModel());
+
+    _model.userMessageInputTextController ??=
+        TextEditingController(text: 'Complete Setup...');
+    _model.userMessageInputFocusNode ??= FocusNode();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
 
   @override
   void dispose() {
-    // _model.dispose(); // Commented out as per request
+    _model.dispose();
+
     super.dispose();
   }
-
-  // Commented out API related methods as per request
-  /*
-  Future<void> _startOrResumeOnboarding() async {
-    if (currentUser == null) {
-      setState(() {
-        _isLoading = false; // Set loading to false if no user
-      });
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('startOnboarding');
-      // For development, you can mock the current user if FirebaseAuth isn't fully set up locally
-      final results = await callable.call({'userId': currentUserUid ?? 'dummy_user_id'});
-      final data = results.data as Map<String, dynamic>;
-
-      _onboardingSessionId = data['sessionId'];
-      // Ensure 'messages' is treated as a List<dynamic> before mapping
-      final messages = (data['messages'] as List<dynamic>)
-          .map((m) => Message(
-              text: m['text'] as String, isFromUser: m['sender'] == 'user'))
-          .toList();
-
-      setState(() {
-        _model.conversation = messages;
-        _isLoading = false;
-        _isConversationDone = data['isDone'] ?? false;
-      });
-    } catch (e) {
-      print('Error starting onboarding: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error starting onboarding. Please try again.')),
-      );
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _handleUserMessage() async {
-    final text = _model.userMessageInputTextController.text;
-    if (text.isEmpty || _onboardingSessionId == null) {
-      return;
-    }
-
-    final userMessage = Message(text: text, isFromUser: true);
-
-    setState(() {
-      _model.conversation.add(userMessage);
-      _isLoading = true;
-    });
-    _model.userMessageInputTextController.clear();
-
-    try {
-      final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('postToOnboarding');
-      final results = await callable.call({
-        'sessionId': _onboardingSessionId,
-        'message': text,
-      });
-
-      final data = results.data as Map<String, dynamic>;
-      final aiResponse =
-          Message(text: data['response'] as String, isFromUser: false);
-
-      setState(() {
-        _model.conversation.add(aiResponse);
-        _isConversationDone = data['isDone'] ?? false;
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('Error sending message: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error sending message. Please try again.')),
-      );
-      setState(() {
-        _isLoading = false;
-        _model.conversation.remove(userMessage); // Remove user message on error
-      });
-    }
-  }
-
-  Future<void> _completeOnboarding() async {
-    // The backend should handle marking the user as complete.
-    // This navigation assumes the backend has finished its work.
-    context.goNamed(MainDashWidget.routeName);
-  }
-
-  // New method to populate dummy conversation data
-  void _populateDummyConversation() {
-    setState(() {
-      _model.conversation = [
-        Message(text: "Hello! I'm here to help you set up your wallet. What's your primary goal with this app?", isFromUser: false),
-        Message(text: "My goal is to track my spending and save money.", isFromUser: true),
-        Message(text: "That's a great goal! Are you interested in budgeting tools or investment insights?", isFromUser: false),
-        Message(text: "Budgeting tools would be really helpful for me.", isFromUser: true),
-        Message(text: "Excellent! We have several budgeting features. Is there any specific type of budget you're looking for, like a monthly budget or category-based tracking?", isFromUser: false),
-        Message(text: "A monthly budget would be ideal.", isFromUser: true),
-        Message(text: "Got it! Your onboarding is now complete. We've set up your profile to focus on monthly budgeting. You can always adjust these settings later. Enjoy using the app!", isFromUser: false),
-      ];
-      _isConversationDone = true; // Mark as done for dummy data
-      _isLoading = false; // Ensure loading is off
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Dummy conversation loaded!')),
-    );
-  }
-
-  // Existing method to upload dummy Firestore data (from your provided code)
-  Future<void> _uploadDummyFirestoreData() async {
-    try {
-      final data = {
-        'name': 'Test User from Onboarding',
-        'email': 'testuser_onboarding@example.com',
-        'timestamp': FieldValue.serverTimestamp(),
-        'role': 'onboarding_tester',
-      };
-      await FirebaseFirestore.instance.collection('demoEntries').add(data);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Dummy Firestore data uploaded successfully!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error uploading Firestore data: $e')),
-      );
-    }
-  }
-  */
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        body: Center(
-          child: FFButtonWidget(
-            onPressed: () async {
-              await uploadDummyData(context);
-            },
-            text: 'Populate Dummy Data & Continue',
-            options: FFButtonOptions(
-              width: 250,
-              height: 50,
-              color: FlutterFlowTheme.of(context).primary,
-              textStyle: FlutterFlowTheme.of(context).titleSmall.override(
-                    fontFamily: 'Plus Jakarta Sans',
-                    color: Colors.white,
-                    fontSize: 16,
+        body: SafeArea(
+          top: true,
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Expanded(
+                flex: 1,
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  scrollDirection: Axis.vertical,
+                  children: [
+                    Container(
+                      width: 363.1,
+                      height: 700.0,
+                      decoration: BoxDecoration(
+                        color: FlutterFlowTheme.of(context).secondaryBackground,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'This screen is for the AI conversation to collect user profile data.',
+                          style: FlutterFlowTheme.of(context).bodyLarge,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          10.0, 0.0, 10.0, 0.0),
+                      child: TextFormField(
+                        controller: _model.userMessageInputTextController,
+                        focusNode: _model.userMessageInputFocusNode,
+                        readOnly:
+                            true, // Making the text field non-editable for this example
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor:
+                              FlutterFlowTheme.of(context).secondaryBackground,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-              borderRadius: BorderRadius.circular(12),
-            ),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                        0.0, 0.0, 10.0, 0.0),
+                    child: FFButtonWidget(
+                      onPressed: () async {
+                      final user = currentUser;
+                      if (user == null) {
+                        context.goNamed(AuthHubScreenWidget.routeName);
+                        return;
+                      }
+
+                      final batch = FirebaseFirestore.instance.batch();
+                      
+                      // --- Create references with unique IDs FIRST ---
+                      final hdfcAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
+                      final cashAccountRef = FirebaseFirestore.instance.collection('user_accounts').doc();
+                      final vehicleAssetRef = FirebaseFirestore.instance.collection('user_assets').doc();
+
+                      // --- Set Account Data ---
+                      batch.set(hdfcAccountRef, {
+                        'user_id': user.uid, 'account_name': 'HDFC Bank Savings', 'account_type': 'Debit',
+                        'current_balance': 125500.75, 'created_at': FieldValue.serverTimestamp(), 'account_color': '#1e90ff',
+                      });
+                      batch.set(cashAccountRef, {
+                        'user_id': user.uid, 'account_name': 'Cash Wallet', 'account_type': 'Cash',
+                        'current_balance': 8500.00, 'created_at': FieldValue.serverTimestamp(), 'account_color': '#32cd32',
+                      });
+
+                      // --- Set Asset Data ---
+                      batch.set(vehicleAssetRef, {
+                        'user_id': user.uid, 'asset_name': 'My Suzuki Swift', 'asset_type': 'Vehicle',
+                        'current_value': 680000.0, 'purchase_value': 820000.0,
+                        'purchase_date': Timestamp.fromDate(DateTime(2023, 5, 20)),
+                        'metadata': { 'make': 'Maruti Suzuki', 'model': 'Swift VXI', 'year': 2023 }
+                      });
+
+                      // --- Set Transaction Data (linked to HDFC account) ---
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 50000.0,
+                        'type': 'Income', 'description': 'Monthly Salary', 'category': 'Salary',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 1)),
+                      });
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 750.50,
+                        'type': 'Expense', 'description': 'Dinner at Toit', 'category': 'Food & Drink',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 20)),
+                      });
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 900.00,
+                        'type': 'Expense', 'description': 'movie', 'category': 'entertainment',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 20)),
+                      });
+                      batch.set(FirebaseFirestore.instance.collection('transactions').doc(), {
+                        'user_id': user.uid, 'account_id': hdfcAccountRef.id, 'amount': 1500.00,
+                        'type': 'Expense', 'description': 'family outing', 'category': 'entertainment',
+                        'transaction_date': Timestamp.fromDate(DateTime(2025, 7, 20)),
+                      });
+
+                      // --- Finalize Onboarding ---
+                      final walletUserDocRef = FirebaseFirestore.instance.collection('wallet_user_collection').doc(user.uid);
+                      batch.update(walletUserDocRef, {
+                        'onboarding_completed': true,
+                        'persona': 'A 32-year-old tech professional who is a careful budgetor.'
+                      });
+
+                      try {
+                        await batch.commit();
+                        context.goNamed(MainDashWidget.routeName);
+                      } catch (e) {
+                        print('Error committing batch write: $e');
+                      }
+                    },
+                      text: 'Finish',
+                      icon: const Icon(
+                        Icons.send,
+                        size: 15.0,
+                      ),
+                      options: FFButtonOptions(
+                        width: 100, // Adjusted width for better text fit
+                        height: 40.0,
+                        color: FlutterFlowTheme.of(context).primary,
+                        textStyle:
+                            FlutterFlowTheme.of(context).titleSmall.override(
+                                  fontFamily: FlutterFlowTheme.of(context)
+                                      .titleSmallFamily,
+                                  color: Colors.white,
+                                ),
+                        elevation: 0.0,
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

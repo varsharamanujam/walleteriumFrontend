@@ -18,8 +18,8 @@ class AIConversationalOnboardingScreenModel
     extends FlutterFlowModel<AIConversationalOnboardingScreenWidget> {
   ///  State fields for stateful widgets in this page.
 
-  // TextEditingController userMessageInputTextController = TextEditingController(); // Commented out as per request
-  // FocusNode? userMessageInputFocusNode; // Keep this as nullable if FlutterFlow might not always initialize it // Commented out as per request
+  TextEditingController userMessageInputTextController = TextEditingController();
+  FocusNode? userMessageInputFocusNode;
 
   // String? Function(BuildContext, String?)? // Commented out as per request
   //     userMessageInputTextControllerValidator; // Commented out as per request
@@ -36,10 +36,10 @@ class AIConversationalOnboardingScreenModel
   @override
   void dispose() {
     // Safely dispose of nullable FocusNode
-    // userMessageInputFocusNode?.dispose(); // Commented out as per request
+    userMessageInputFocusNode?.dispose();
 
     // Dispose of non-nullable TextEditingController
-    // userMessageInputTextController.dispose(); // Commented out as per request
+    userMessageInputTextController.dispose();
 
     // Call super.dispose() *last*
     // super.dispose(); only if its not abstract class
