@@ -2,20 +2,60 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Rule for wallet_user_collection:
+    // Allows authenticated users to read and write their own wallet user document.
+    // Essential for new user sign-up (creation) and updating persona/onboarding status.
     match /wallet_user_collection/{userId} {
-      allow read, write: if request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Rule for user_profiles:
+    // Allows authenticated users to read and write their own user profile document.
+    match /user_profiles/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Rule for user_accounts:
+    // Allows authenticated users to read and write their own account documents.
+    // Ensures the 'user_id' field in the document matches the authenticated user's UID.
     match /user_accounts/{docId} {
-      allow read, write: if request.auth.uid == resource.data.user_id;
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.user_id;
     }
 
+    // Rule for user_assets:
+    // Allows authenticated users to read and write their own asset documents.
+    // Ensures the 'user_id' field in the document matches the authenticated user's UID.
     match /user_assets/{docId} {
-      allow read, write: if request.auth.uid == resource.data.user_id;
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.user_id;
     }
 
+    // Rule for transactions:
+    // Allows authenticated users to read and write their own transaction documents.
+    // Ensures the 'user_id' field in the document matches the authenticated user's UID.
     match /transactions/{docId} {
-      allow read, write: if request.auth.uid == resource.data.user_id;
+      allow create: if request.auth != null && request.auth.uid ==
+      request.resource.data.user_id;
+       allow update, delete, read: if request.auth != null && request.auth.uid ==
+      resource.data.user_id;
+    }
+
+    // Rule for uploaded_files:
+    // Allows authenticated users to create new metadata documents for their own uploads.
+    // The 'user_id' field in the new document must match their UID.
+    // Also allows authenticated users to read and delete their own uploaded file metadata.
+    match /uploaded_files/{fileId} {
+      allow create: if request.auth != null && request.resource.data.user_id == request.auth.uid;
+      allow read, delete: if request.auth != null && resource.data.user_id == request.auth.uid;
+    }
+
+    // Broad read rule for all other documents not explicitly matched above.
+    // This allows any authenticated user to read any document in the database.
+    // Consider if this is the desired security level for your application.
+    // If you need more granular control, remove this and add specific read rules.
+    match /{document=**} {
+      allow read: if request.auth != null;
+      // Explicitly deny writes for any documents not covered by specific write rules above.
+      allow write: if false;
     }
   }
 }

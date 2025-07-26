@@ -46,13 +46,16 @@ class _DummyDataUploaderWidgetState extends State<DummyDataUploaderWidget> {
 }
 
 Future<void> uploadDummyData(BuildContext context) async {
-  final user = currentUser;
-  if (user == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Please sign in first.')),
-    );
-    return;
-  }
+     final user = currentUser;
+       if (user == null) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text('Please sign in first.')),
+         );
+         print('DEBUG: User is null, cannot upload dummy data.'); // Add this
+         return;
+       }
+   
+      print('DEBUG: Current User UID: ${user.uid}');
 
   final batch = FirebaseFirestore.instance.batch();
 
@@ -117,6 +120,7 @@ Future<void> uploadDummyData(BuildContext context) async {
     ];
 
     for (final tx in transactions) {
+       print('DEBUG: Transaction data being written: user_id = ${user.uid}, amount = ${tx['amount']}');
       batch.set(
         FirebaseFirestore.instance.collection('transactions').doc(),
         {
@@ -174,20 +178,22 @@ Future<void> uploadDummyData(BuildContext context) async {
       'persona': 'Budgetor',
     }, SetOptions(merge: true));
 
-    await batch.commit();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Dummy financial data uploaded successfully!')),
-    );
-    print('Attempting to navigate to MainDashWidget...');
-    // After successful upload, navigate to the main dashboard
-    context.goNamed(MainDashWidget.routeName);
-    print('Navigation to MainDashWidget initiated.');
-  } catch (e) {
+    try {
+        await batch.commit();
+        print('DEBUG: Batch commit successful.'); // Add this
+        context.goNamed(MainDashWidget.routeName);
+       print('Navigation to MainDashWidget initiated.');
+      } catch (e) {
+        print('DEBUG: Error during dummy data upload or navigation: $e'); // Add this
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading data: $e')),
+        );
+      }
+    }
+    catch (e) {
     print('Error during dummy data upload or navigation: $e');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Error uploading data: $e')),
     );
   }
 }
-
