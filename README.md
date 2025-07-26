@@ -18,10 +18,10 @@ LLM + RAG + Tools Approach Using Only Google Products
 - Integrates natively with Firebase and Google Cloud services.
 
 ## Module 3: Core Backend Services & APIs
-### Tech: Google Cloud Functions & Google Cloud Run.
-### Serverless functions for business logic and APIs.
-### Use Vertex AI for Gemini LLM inference and reasoning.
-### API Gateway for secure endpoints.
+- Tech: Google Cloud Functions & Google Cloud Run.
+- Serverless functions for business logic and APIs.
+- Use Vertex AI for Gemini LLM inference and reasoning.
+- API Gateway for secure endpoints.
 
 ## Module 4: Google Wallet Integration Layer
 - Tech: Google Wallet API (Google Pay API).
