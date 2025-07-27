@@ -47,6 +47,7 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
     super.initState();
     _passId = const Uuid().v4(); // Generate a unique ID for this pass instance
     _loadServiceAccountKey(); // Load the service account key when the screen initializes
+    _fetchBudgets();
   }
 
   // Function to load the service account key from a hardcoded string
@@ -86,17 +87,17 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
     final String budgetAmount = _budgetAmountController.text.trim();
 
     final payloadMap = {
-      "iss": _serviceAccountEmail,
-      "aud": "google",
-      "typ": "savetowallet",
-      "origins": [],
+      "iss": _serviceAccountEmail, // Issuer email (service account email)
+      "aud": "google", // Audience is always "google" for Wallet API
+      "typ": "savetowallet", // Type for saving a pass
+      "origins": [], // Optional: list of authorized web origins
       "payload": {
         "genericObjects": [
           {
-            "id": "$_issuerId.$_passId",
-            "classId": "$_issuerId.$_passClass",
+            "id": "$_issuerId.$_passId", // Unique ID for this specific pass instance
+            "classId": "$_issuerId.$_passClass", // ID of the pass class (defines design/type)
             "genericType": "GENERIC_TYPE_UNSPECIFIED",
-            "hexBackgroundColor": "#4285f4",
+            "hexBackgroundColor": "#4285f4", // Google Blue
             "logo": {
               "sourceUri": {
                 "uri": "https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg"
@@ -105,24 +106,24 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
             "cardTitle": {
               "defaultValue": {
                 "language": "en",
-                "value": "Budget: $budgetName"
+                "value": "Budget: $budgetName" // Dynamic budget name
               }
             },
             "subheader": {
               "defaultValue": {
                 "language": "en",
-                "value": "Amount Set"
+                "value": "Amount Set" // Subheader
               }
             },
             "header": {
               "defaultValue": {
                 "language": "en",
-                "value": "₹$budgetAmount"
+                "value": "₹$budgetAmount" // Display the budget amount here
               }
             },
             "barcode": {
               "type": "QR_CODE",
-              "value": _passId
+              "value": _passId // Barcode value can be the pass ID
             },
             "heroImage": {
               "sourceUri": {
@@ -140,6 +141,7 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                 "body": budgetAmount,
                 "id": "budgetAmount"
               }
+              // REMOVED: Goal description from pass payload
             ]
           }
         ]
@@ -150,18 +152,22 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
 
   @override
   void dispose() {
+    // Dispose controllers to free up resources when the widget is removed
     _budgetNameController.dispose();
     _budgetAmountController.dispose();
+    // REMOVED: _goalDescriptionController.dispose();
     super.dispose();
   }
 
-  // --- NEW: Function to fetch budgets from Firestore ---
   void _fetchBudgets() {
     final user = currentUser;
+    print('BudgetGoalsScreen: _fetchBudgets called.');
     if (user == null) {
-      print('User not logged in, cannot fetch budgets.');
+      print('BudgetGoalsScreen: User is NULL. Cannot fetch budgets.');
+      _showSnackBar('You must be logged in to view budgets.');
       return;
     }
+    print('BudgetGoalsScreen: User is NOT NULL. Fetching budgets for UID: ${user.uid}');
 
     // Listen for real-time updates to the 'user_budgets' collection
     FirebaseFirestore.instance
@@ -172,22 +178,30 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
       if (mounted) {
         setState(() {
           _budgets = snapshot.docs;
-          print('Budgets fetched: ${_budgets.length} items.');
+          print('BudgetGoalsScreen: Budgets fetched successfully. Count: ${_budgets.length}');
+          if (_budgets.isEmpty) {
+            print('BudgetGoalsScreen: Fetched 0 budgets. List will show "No budgets set yet."');
+          } else {
+            for (var doc in _budgets) {
+              print('BudgetGoalsScreen: Fetched budget: ${doc.id} => ${doc.data()}');
+            }
+          }
         });
       }
     }, onError: (error) {
-      print('Error fetching budgets: $error');
-      _showSnackBar('Error loading your budgets.');
+      print('BudgetGoalsScreen: ERROR fetching budgets: $error');
+      _showSnackBar('Error loading your budgets: ${error.toString()}');
     });
   }
 
   // Function to handle saving/updating budget data and making the Wallet Pass button visible
-  Future<void> _saveBudget() async {
+  Future<void> _saveBudget() async { // Renamed from _saveBudgetAndGoal to match button
     final String budgetName = _budgetNameController.text.trim();
     final double? budgetAmount = double.tryParse(_budgetAmountController.text.trim());
+    // REMOVED: final String goalDescription = _goalDescriptionController.text.trim();
 
-    if (budgetName.isEmpty || budgetAmount == null) {
-      _showSnackBar('Please enter both a budget name and a valid amount.');
+    if (budgetName.isEmpty || budgetAmount == null) { // REMOVED: Validate goal too
+      _showSnackBar('Please fill all fields correctly.');
       return;
     }
 
@@ -206,8 +220,9 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
         'userId': user.uid,
         'budgetName': budgetName,
         'budgetAmount': budgetAmount,
+        // REMOVED: 'goalDescription': goalDescription, // Save goal description
         'createdAt': FieldValue.serverTimestamp(),
-        'walletPassId': _passId, // Save the generated pass ID for future updates
+        'walletPassId': _passId, // IMPORTANT: Save the generated pass ID for future updates
       };
 
       if (_selectedBudget == null) {
@@ -236,22 +251,20 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
     }
   }
 
-  // --- NEW: Function to set form fields for editing ---
+  // Function to set form fields for editing
   void _editBudget(DocumentSnapshot budget) {
     setState(() {
       _selectedBudget = budget;
       _budgetNameController.text = budget['budgetName'];
       _budgetAmountController.text = budget['budgetAmount'].toString();
-      // If you want to allow editing the passId, you'd update _passId here too,
-      // but typically passId is immutable once created for a specific pass instance.
-      // For simplicity, we'll keep _passId unique per form submission,
-      // meaning editing won't change the Wallet Pass ID of an existing pass.
-      // If you need to update an existing Wallet Pass, you'd use a backend function.
+      // REMOVED: _goalDescriptionController.text = budget['goalDescription'] ?? ''; // Set goal description for editing
+      _passId = const Uuid().v4(); // Generate a new passId for the new pass
+      _showWalletButton = false; // Hide wallet button until updated budget is saved
     });
     _showSnackBar('Editing budget: ${budget['budgetName']}');
   }
 
-  // --- NEW: Function to delete a budget ---
+  // Function to delete a budget
   Future<void> _deleteBudget(String docId) async {
     bool? confirm = await showDialog<bool>(
       context: context,
@@ -286,12 +299,13 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
     }
   }
 
-  // --- NEW: Function to clear the form and reset selected budget ---
+  // Function to clear the form and reset selected budget
   void _clearForm() {
     setState(() {
       _selectedBudget = null;
       _budgetNameController.clear();
       _budgetAmountController.clear();
+      // REMOVED: _goalDescriptionController.clear(); // Clear goal description
       _passId = const Uuid().v4(); // Generate a new passId for a new budget
       _showWalletButton = false; // Hide wallet button for new entry
     });
@@ -309,7 +323,7 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Set Budget'),
+        title: const Text('Set Budget'), // Updated title
         backgroundColor: FlutterFlowTheme.of(context).primary,
         foregroundColor: Colors.white,
         actions: [
@@ -359,6 +373,10 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
               ),
               style: FlutterFlowTheme.of(context).bodyMedium,
             ),
+            // REMOVED: SizedBox(height: 24), // Spacing for new goal field
+            // REMOVED: Text for goal
+            // REMOVED: SizedBox(height: 16),
+            // REMOVED: TextFormField for Goal Description
             const SizedBox(height: 32),
             // Save/Update Budget Button
             FFButtonWidget(
@@ -435,6 +453,7 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                       final budgetData = budgetDoc.data() as Map<String, dynamic>;
                       final budgetName = budgetData['budgetName'] ?? 'N/A';
                       final budgetAmount = budgetData['budgetAmount'] ?? 0.0;
+                      // REMOVED: final goalDescription = budgetData['goalDescription'] ?? 'N/A'; // Get goal description
                       final formattedAmount = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(budgetAmount);
 
                       return Card(
@@ -462,6 +481,13 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                                             color: FlutterFlowTheme.of(context).primaryText,
                                           ),
                                     ),
+                                    // REMOVED: Goal description display
+                                    // const SizedBox(height: 4),
+                                    // Text(
+                                    //   'Goal: $goalDescription',
+                                    //   style: FlutterFlowTheme.of(context).labelMedium,
+                                    //   overflow: TextOverflow.ellipsis,
+                                    // ),
                                   ],
                                 ),
                               ),
