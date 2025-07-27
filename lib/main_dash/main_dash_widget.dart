@@ -46,7 +46,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   final String _passClass = 'budget';
 
   // Make _passId mutable so it can be assigned in initState
-  late String _passId; // Use late to tell Dart it will be initialized before use
+  final String _passId = const Uuid().v4(); // Use late to tell Dart it will be initialized before use
 
   // Convert _passPayload into a getter method
   String get _passPayload {
@@ -144,7 +144,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => MainDashModel());
-    _passId = const Uuid().v4(); // Initialize _passId here
+    // _passId = const Uuid().v4(); // Initialize _passId here
     _fetchDashboardData();
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
@@ -511,7 +511,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
       Container(
         color: Colors.yellow,
         child: Text(
-          'IF YOU CAN SEE THIS, THE LAYOUT IS OKAY.',
+          '',
           style: TextStyle(color: Colors.black),
         ),
       ),
