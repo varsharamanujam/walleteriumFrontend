@@ -1,7 +1,6 @@
-// In lib/main_dash/main_dash_widget.dart
 
-import 'package:walleterium/main_dash/wallet_sync_button.dart';
-
+import 'package:add_to_google_wallet/widgets/add_to_google_wallet_button.dart';
+import 'package:uuid/uuid.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -14,16 +13,16 @@ import 'package:firebase_storage/firebase_storage.dart'; // Added import
 import 'main_dash_model.dart';
 export 'main_dash_model.dart';
 import 'dart:io';
-
-
 import 'notification_card_widget.dart';
 import 'transaction/transaction_list_screen.dart'; // For actionable notification navigation
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/index.dart';
 import '/backend/backend.dart';
 import 'package:walleterium/feature1/settings_screen.dart'; // Ensure this import is correct
+import 'package:walleterium/feature1/budget_goals_screen.dart'; // BudgetGoalsScreen is parked
+import 'dart:convert'; // <<< ADDED: For jsonEncode
+import 'package:intl/intl.dart'; // <<< ADDED: For NumberFormat
 
 class MainDashWidget extends StatefulWidget {
   const MainDashWidget({super.key});
@@ -42,7 +41,92 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   bool _isLoading = true;
   WalletUsersRecord? _walletUser;
   List<UserAccountsRecord> _accounts = [];
-  List<UserAssetsRecord> _assets = [];
+  List<UserAssetsRecord> _assets = []; // Your assets list
+
+  // --- GOOGLE WALLET SPECIFIC VARIABLES (MOVED INSIDE THE CLASS) ---
+  final String _passId = const Uuid().v4(); // Unique ID for this pass
+  // IMPORTANT: Replace with your actual Issuer ID
+  final String _issuerId = '3388000000022969114'; // <<< REPLACE WITH YOUR ISSUER ID
+  // IMPORTANT: Replace with your Service Account's email from the JSON key
+  final String _serviceAccountEmail = 'google-wallet-issuer-svc@walleterium.iam.gserviceaccount.com'; // <<< REPLACE WITH YOUR SERVICE ACCOUNT EMAIL
+  // This is the Class ID you must create in Google Wallet Console (e.g., 'asset_pass' or 'total_assets')
+  final String _issuerEmail = 'varshasureshbabu2402@gmail.com';
+
+  final String _passClass = 'budget'; // <<< You might need to create this class in the Wallet Console
+
+  // Variable to hold the entire content of your Service Account JSON key file
+  late String _serviceAccountKeyJson; // Will be loaded in initState
+
+   String get _passPayload {
+    // Calculate total assets from the fetched _assets list
+    final double totalAssets = _assets.fold(0.0, (sum, asset) => sum + asset.currentValue);
+    final formattedAssets = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalAssets);
+
+    final payloadMap = {
+      "iss": _serviceAccountEmail,
+      "aud": "google",
+      "typ": "savetowallet",
+      "origins": [],
+      "payload": {
+        "genericObjects": [
+          {
+            "id": "$_issuerId.$_passId",
+            "classId": "$_issuerId.$_passClass",
+            "genericType": "GENERIC_TYPE_UNSPECIFIED",
+            "hexBackgroundColor": "#34A853", // Green for assets
+            "logo": {
+              "sourceUri": {
+                "uri": "https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg"
+              }
+            },
+            "cardTitle": {
+              "defaultValue": {
+                "language": "en",
+                "value": "My Total Assets" // Title of the pass
+              }
+            },
+            "subheader": {
+              "defaultValue": {
+                "language": "en",
+                "value": "Current Value" // Subheader
+              }
+            },
+            "header": {
+              "defaultValue": {
+                "language": "en",
+                "value": formattedAssets // Display the total assets here
+              }
+            },
+            "barcode": {
+              "type": "QR_CODE",
+              "value": _passId // Barcode value
+            },
+            "heroImage": {
+              "sourceUri": {
+                "uri": "https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/google-io-hero-demo-only.jpg" // Placeholder hero image
+              }
+            },
+            "textModulesData": [
+              {
+                "header": "Asset Breakdown",
+                "body": "Details of your investments.", // You could add more dynamic details here
+                "id": "asset_details"
+              },
+              {
+                "header": "Last Updated",
+                "body": DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now()),
+                "id": "last_updated"
+              }
+            ]
+          }
+        ]
+      }
+    };
+    return jsonEncode(payloadMap);
+  }
+
+  void _showSnackBar(BuildContext context, String text) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
   // Sample notification JSONs for demonstration
   final List<Map<String, dynamic>> _sampleNotifications = [
@@ -61,7 +145,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
       'icon': 'info',
       'details': 'Please verify your email to unlock all features.'
     },
-    // --- Actionable notification for UI testing ---
     {
       'text': 'View sample transactions',
       'icon': 'info',
@@ -74,9 +157,42 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => MainDashModel());
+    _loadServiceAccountKey(); // Call this to load the key
     _fetchDashboardData();
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
+
+  // Function to load the service account key
+  Future<void> _loadServiceAccountKey() async {
+    try {
+      // IMPORTANT: Replace the entire placeholder string below with the EXACT content
+      // of your downloaded Service Account JSON key file.
+      const String keyJsonString = '''
+      {
+        "type": "service_account",
+        "project_id": "YOUR_PROJECT_ID",
+        "private_key_id": "YOUR_PRIVATE_KEY_ID",
+        "private_key": "-----BEGIN PRIVATE KEY-----\\nYOUR_PRIVATE_KEY_CONTENT\\n-----END PRIVATE KEY-----\\n",
+        "client_email": "YOUR_SERVICE_ACCOUNT_EMAIL@your-project-id.iam.gserviceaccount.com",
+        "client_id": "YOUR_CLIENT_ID",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/YOUR_SERVICE_ACCOUNT_EMAIL%40your-project-id.iam.gserviceaccount.com",
+        "universe_domain": "googleapis.com"
+      }
+      ''';
+      
+      setState(() {
+        _serviceAccountKeyJson = keyJsonString;
+      });
+      print('MainDashWidget: Google Wallet Service Account Key loaded successfully.');
+    } catch (e) {
+      print('MainDashWidget: Error loading service account key: $e');
+      _showSnackBar(context, 'Error loading Wallet API key.');
+    }
+  }
+
 
   Future<void> _fetchDashboardData() async {
     print('MainDashWidget: _fetchDashboardData called.');
@@ -139,7 +255,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
 
   @override
   Widget build(BuildContext context) {
-	// ... (This function remains the same)									   
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
@@ -148,36 +263,30 @@ class _MainDashWidgetState extends State<MainDashWidget> {
         automaticallyImplyLeading: false,
         title: _isLoading ? Container() : _buildWelcomeHeader(),
         actions: [
-          // Settings button added to the AppBar actions
           IconButton(
             icon: const Icon(
               Icons.settings,
-              color: Colors.black, // Set the icon color to black
+              color: Colors.black,
             ),
             tooltip: 'Settings',
-            onPressed: () async { // Made onPressed async to await the result
-              // Ensure currentUser is not null before accessing its properties
+            onPressed: () async {
               final user = currentUser;
               if (user == null) {
                 print('User is null, cannot open settings.');
                 return;
               }
-              // Navigate to the SettingsScreen and await its result
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => SettingsScreen(
-                    // Use _walletUser's displayName if available, fallback to user.displayName
                     displayName: _walletUser?.displayName ?? user.displayName ?? '',
-                    email: user.email ?? '', // Use user.email
+                    email: user.email ?? '',
                   ),
                 ),
               );
 
-              // If settings were saved (result is not null and contains displayName),
-              // then refresh the dashboard data to reflect the changes.
               if (result != null && result is Map<String, dynamic> && result.containsKey('displayName')) {
-                _fetchDashboardData(); // Re-fetch data to update display name
+                _fetchDashboardData();
               }
             },
           ),
@@ -212,18 +321,22 @@ class _MainDashWidgetState extends State<MainDashWidget> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
+            // REMOVED: IconButton for BudgetGoalsScreen
             IconButton(
               icon: Icon(Icons.edit_note),
               onPressed: () {
-                // Navigate to Budget & Goals Editing Page
-                Navigator.pushNamed(context, '/edit_budget_goals');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BudgetGoalsScreen(),
+                  ),
+                );
               },
             ),
             SizedBox(width: 48), // The space for the FAB
             IconButton(
               icon: Icon(Icons.smart_toy),
               onPressed: () {
-                // Navigate to AI Coach page
                 Navigator.pushNamed(context, '/ai_coach');
               },
             ),
@@ -241,6 +354,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             leading: Icon(Icons.image),
             title: Text('Upload Image (Gallery)'),
             onTap: () async {
+              Navigator.pop(context);
               final ImagePicker picker = ImagePicker();
               final XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
               if (imageFile != null) {
@@ -257,7 +371,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                     downloadUrl: downloadUrl,
                     fileType: 'image',
                   );
-                  print('Image has been successfully uploaded.'); // Added console log
+                  print('Image has been successfully uploaded.');
                 }
               } else {
                 print('Image upload cancelled.');
@@ -288,7 +402,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                   print('Video has been successfully uploaded.');
                 }
               } else {
-                print('Video upload cancelled.');
+                print('Video recording cancelled.');
               }
             },
           ),
@@ -416,7 +530,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Widget _buildDashboardUI() {
-	// ... (This function remains the same)									   
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.max,
@@ -431,11 +544,43 @@ class _MainDashWidgetState extends State<MainDashWidget> {
               ],
             ),
           ),
-          // --- Wallet Sync Button ---
-          // Padding(
-          //   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          //   child: WalletSyncButton(),
-          // ),
+          // --- RE-ADD THE WALLET BUTTON HERE ---
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Column(
+              children: [
+                // Show loading indicator or the button based on key availability
+                if (mounted && (_serviceAccountKeyJson?.isNotEmpty ?? false))
+                  // FIX: Use AddToGoogleWalletButton directly without serviceAccountKey parameter
+                  AddToGoogleWalletButton(
+                    pass: _passPayload, // Pass the dynamically generated payload for visual rendering
+                    // REMOVED: serviceAccountKey: _serviceAccountKeyJson, // This parameter is not supported by v0.0.5
+                    onSuccess: () {
+                      _showSnackBar(context, 'Total Assets Pass added to Wallet successfully!');
+                      print('Google Wallet: Total Assets Pass added successfully.'); // Log success
+                    },
+                    onCanceled: () {
+                      _showSnackBar(context, 'Add Total Assets Pass to Wallet action canceled.');
+                      print('Google Wallet: Total Assets Pass action canceled by user.'); // Log canceled
+                    },
+                    onError: (Object error) {
+                      _showSnackBar(context, 'Error adding Total Assets Pass to Wallet: ${error.toString()}');
+                      print('Google Wallet: Total Assets Pass Error - ${error.toString()}'); // Log error
+                    },
+                    locale: const Locale.fromSubtags(
+                      languageCode: 'en',
+                      countryCode: 'US',
+                    ),
+                  )
+                else
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: CircularProgressIndicator(), // Show loading while key loads
+                  ),
+              ],
+            ),
+          ),
+          // --- END RE-ADDED WALLET BUTTON ---
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(16.0, 24.0, 0.0, 0.0),
             child: Text(
@@ -445,7 +590,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           ),
           _buildAccountsCarousel(),
           _buildResetUserButton(),
-          // Notifications vertical stack below reset button
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
             child: _buildNotificationsStack(),
@@ -461,18 +605,13 @@ class _MainDashWidgetState extends State<MainDashWidget> {
     }
     return Column(
       children: _sampleNotifications.map((json) {
-        // If the notification has an 'action', make it tappable
         if (json['action'] == 'show_transactions') {
           return NotificationCardWidget(
             data: json,
             onTap: () {
-              // Navigate to the transaction list screen for UI testing
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) =>
-                      // Import path may need to be adjusted if you move files
-                      // ignore: prefer_const_constructors
-                      TransactionListScreen(),
+                  builder: (context) => TransactionListScreen(),
                 ),
               );
             },
@@ -485,38 +624,38 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
   
   Widget _buildAvailableBalanceCard() {
-  final double totalBalance = _accounts.fold(0.0, (sum, account) => sum + account.currentBalance);
-  final formattedBalance = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalBalance);
+    final double totalBalance = _accounts.fold(0.0, (sum, account) => sum + account.currentBalance);
+    final formattedBalance = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalBalance);
 
-  return Card(
-    clipBehavior: Clip.antiAlias,
-    elevation: 2,
-    margin: const EdgeInsets.all(8.0),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    child: InkWell(
-      onTap: () {
-        context.pushNamed(AllTransactionsScreen.routeName);
-      },
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Available Balance',
-              style: FlutterFlowTheme.of(context).labelLarge,
-            ),
-            SizedBox(height: 8),
-            Text(
-              formattedBalance,
-              style: FlutterFlowTheme.of(context).titleLarge,
-            )
-          ],
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      elevation: 2,
+      margin: const EdgeInsets.all(8.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () {
+          context.pushNamed(AllTransactionsScreen.routeName);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Available Balance',
+                style: FlutterFlowTheme.of(context).labelLarge,
+              ),
+              SizedBox(height: 8),
+              Text(
+                formattedBalance,
+                style: FlutterFlowTheme.of(context).titleLarge,
+              )
+            ],
+          ),
         ),
       ),
-	),
-  );
-}
+    );
+  }
 
   Widget _buildAssetsCard() {
     final double totalAssets = _assets.fold(0.0, (sum, asset) => sum + asset.currentValue);
@@ -531,7 +670,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
       child: InkWell(
         onTap: () {
           print('Assets card tapped!');
-		  // Rule 2: Tapping on Assets takes us to the Wealth Hub screen																
           context.pushNamed(WealthHubScreen.routeName);
         },
         child: Padding(
@@ -562,14 +700,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
 
   Widget _buildAccountsCarousel() {
-	// ... (This function remains the same)									   
     if (_accounts.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text('No accounts to display.'),
-        ),
-      );
+      return SizedBox.shrink();
     }
     return Padding(
       padding: EdgeInsetsDirectional.fromSTEB(0.0, 12.0, 0.0, 0.0),
@@ -598,7 +730,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
     );
   }
 
-  // --- UPDATED: Navigation logic is changed ---
   Widget _buildAccountCard(UserAccountsRecord account) {
     final balance = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(account.currentBalance);
     final color = colorFromHex(account.accountColor) ?? FlutterFlowTheme.of(context).primary;
@@ -611,10 +742,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           print('${account.accountName} card tapped!');
           
           if (account.accountType == 'Capital') {
-			// Rule 1: Capital account goes to the new All Transactions screen																  
             context.pushNamed(AllTransactionsScreen.routeName);
           } else {
-			// Rule 3: Debit/Cash accounts go to the specific Spending Analyzer																   
             context.pushNamed(
               SpendingAnalyzerScreen.routeName,
               pathParameters: {
@@ -638,7 +767,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             ],
           ),
           child: Column(
-			// ... (The rest of the card's UI remains the same)												   
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -680,7 +808,6 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   }
   
   Widget _buildResetUserButton() {
-	// ... (This function remains the same)									   
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: FFButtonWidget(
@@ -756,12 +883,11 @@ class _MainDashWidgetState extends State<MainDashWidget> {
 }
 
 Future<String?> uploadFileToFirebaseStorage({
-  required BuildContext context, // Added BuildContext parameter
+  required BuildContext context,
   required String filePath,
   required String fileName,
-  required String fileType, // e.g., 'image', 'video', 'pdf'
+  required String fileType,
 }) async {
-  // Ensure a user is logged in
   final user = currentUser;
   if (user == null) {
     print('Error: User is not logged in.');
@@ -771,10 +897,7 @@ Future<String?> uploadFileToFirebaseStorage({
     return null;
   }
 
-  // Create a File object from the provided path
   final file = File(filePath);
-
-  // Create a storage reference with a structured path: uploads/{userId}/{fileType}/{fileName}
   final storageRef = FirebaseStorage.instance
       .ref()
       .child('uploads')
@@ -783,18 +906,12 @@ Future<String?> uploadFileToFirebaseStorage({
       .child(fileName);
 
   try {
-    // Show a loading indicator or notification
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Uploading $fileName...')),
     );
 
-    // Upload the file
     final uploadTask = storageRef.putFile(file);
-
-    // Await the upload to complete
     final snapshot = await uploadTask.whenComplete(() => {});
-
-    // Get the download URL
     final downloadUrl = await snapshot.ref.getDownloadURL();
     
     print('File uploaded successfully: $downloadUrl');
@@ -812,9 +929,8 @@ Future<String?> uploadFileToFirebaseStorage({
   }
 }
 
-/// Saves the file metadata to a new collection in Firestore.
 Future<void> saveUploadedFileMetadata({
-  required BuildContext context, // Added BuildContext parameter
+  required BuildContext context,
   required String downloadUrl,
   required String fileType,
 }) async {
@@ -822,7 +938,6 @@ Future<void> saveUploadedFileMetadata({
   if (user == null) return;
 
   try {
-    // Create a new document in an 'uploaded_files' collection
     await FirebaseFirestore.instance.collection('uploaded_files').add({
       'user_id': user.uid,
       'download_url': downloadUrl,
