@@ -1,7 +1,7 @@
 // In lib/main_dash/main_dash_widget.dart
 
-import 'package:walleterium/main_dash/wallet_sync_button.dart';
-
+import 'package:add_to_google_wallet/widgets/add_to_google_wallet_button.dart';
+import 'package:uuid/uuid.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -14,11 +14,8 @@ import 'package:firebase_storage/firebase_storage.dart'; // Added import
 import 'main_dash_model.dart';
 export 'main_dash_model.dart';
 import 'dart:io';
-
-
 import 'notification_card_widget.dart';
 import 'transaction/transaction_list_screen.dart'; // For actionable notification navigation
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/index.dart';
@@ -43,6 +40,79 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   WalletUsersRecord? _walletUser;
   List<UserAccountsRecord> _accounts = [];
   List<UserAssetsRecord> _assets = [];
+
+  final String _issuerId = '3388000000022969114';
+  final String _issuerEmail = 'varshasureshbabu2402@gmail.com';
+  final String _passClass = 'budget';
+
+  // Make _passId mutable so it can be assigned in initState
+  late String _passId; // Use late to tell Dart it will be initialized before use
+
+  // Convert _passPayload into a getter method
+  String get _passPayload {
+    // Ensure _passId is initialized if this getter is called before initState completes.
+    // However, given your current usage within build which only happens after initState, this is safe.
+    // If you were to call this getter in initState, you'd need to ensure _passId is set first.
+    final payloadMap = {
+      "iss": _issuerEmail,
+      "aud": "google",
+      "typ": "savetowallet",
+      "origins": [],
+      "payload": {
+        "genericObjects": [
+          {
+            "id": "$_issuerId.$_passId",
+            "classId": "$_issuerId.$_passClass",
+            "genericType": "GENERIC_TYPE_UNSPECIFIED",
+            "hexBackgroundColor": "#4285f4",
+            "logo": {
+              "sourceUri": {
+                "uri": "https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg"
+              }
+            },
+            "cardTitle": {
+              "defaultValue": {
+                "language": "en",
+                "value": "Google I/O '22 [DEMO ONLY]"
+              }
+            },
+            "subheader": {
+              "defaultValue": {
+                "language": "en",
+                "value": "Attendee"
+              }
+            },
+            "header": {
+              "defaultValue": {
+                "language": "en",
+                "value": "Alex McJacobs"
+              }
+            },
+            "barcode": {
+              "type": "QR_CODE",
+              "value": _passId // Use _passId directly here
+            },
+            "heroImage": {
+              "sourceUri": {
+                "uri": "https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/google-io-hero-demo-only.jpg"
+              }
+            },
+            "textModulesData": [
+              {
+                "header": "POINTS",
+                "body": "1234",
+                "id": "points"
+              }
+            ]
+          }
+        ]
+      }
+    };
+    return jsonEncode(payloadMap);
+  }
+
+  void _showSnackBar(BuildContext context, String text) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
   // Sample notification JSONs for demonstration
   final List<Map<String, dynamic>> _sampleNotifications = [
@@ -74,6 +144,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => MainDashModel());
+    _passId = const Uuid().v4(); // Initialize _passId here
     _fetchDashboardData();
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
@@ -432,10 +503,34 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             ),
           ),
           // --- Wallet Sync Button ---
-          // Padding(
-          //   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          //   child: WalletSyncButton(),
-          // ),
+          Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+  child: Column(
+    children: [
+      // ---- TEMPORARY WIDGET FOR TESTING ----
+      Container(
+        color: Colors.yellow,
+        child: Text(
+          'IF YOU CAN SEE THIS, THE LAYOUT IS OKAY.',
+          style: TextStyle(color: Colors.black),
+        ),
+      ),
+      SizedBox(height: 8),
+      // ------------------------------------
+      
+      AddToGoogleWalletButton(
+        pass: _passPayload,
+        onSuccess: () => _showSnackBar(context, 'Success!'),
+        onCanceled: () => _showSnackBar(context, 'Action canceled.'),
+        onError: (Object error) => _showSnackBar(context, error.toString()),
+        locale: const Locale.fromSubtags(
+          languageCode: 'en',
+          countryCode: 'US',
+        ),
+      ),
+    ],
+  ),
+),
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(16.0, 24.0, 0.0, 0.0),
             child: Text(
