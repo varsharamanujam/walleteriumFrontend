@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:walleterium/flutter_flow/flutter_flow_theme.dart';
 import 'package:walleterium/flutter_flow/flutter_flow_widgets.dart'; // Assuming FFButtonWidget is here
+import 'package:cloud_firestore/cloud_firestore.dart'; // <<< ADDED: Import for Firestore
+import '/auth/firebase_auth/auth_util.dart'; // <<< ADDED: Import for currentUser
 
 class BudgetGoalsScreen extends StatefulWidget {
   const BudgetGoalsScreen({super.key});
@@ -27,7 +29,7 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
   }
 
   // Function to handle saving the budget data
-  void _saveBudget() {
+  Future<void> _saveBudget() async { // <<< MADE ASYNC
     final String budgetName = _budgetNameController.text.trim();
     final double? budgetAmount = double.tryParse(_budgetAmountController.text.trim());
 
@@ -36,16 +38,41 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
       return;
     }
 
-    // For now, we'll just print the values.
-    // In a real app, you would save this to a database (e.g., Firestore).
-    print('Budget Saved:');
-    print('  Name: $budgetName');
-    print('  Amount: $budgetAmount');
+    final user = currentUser; // Get the current user
+    if (user == null) {
+      _showSnackBar('You must be logged in to save a budget.');
+      print('Error: User is not logged in. Cannot save budget.');
+      return;
+    }
 
-    _showSnackBar('Budget "$budgetName" saved successfully!');
+    _showSnackBar('Saving budget...');
+    print('Attempting to save budget to Firestore:');
+    print('  Budget Name: $budgetName');
+    print('  Budget Amount: $budgetAmount');
+    print('  User ID: ${user.uid}');
 
-    // You might want to navigate back after saving
-    // Navigator.pop(context);
+    try {
+      // Save the budget data to a 'user_budgets' collection in Firestore
+      await FirebaseFirestore.instance.collection('user_budgets').add({
+        'userId': user.uid, // Store the user's ID
+        'budgetName': budgetName,
+        'budgetAmount': budgetAmount,
+        'createdAt': FieldValue.serverTimestamp(), // Timestamp of creation
+      });
+
+      _showSnackBar('Budget "$budgetName" saved successfully to Firestore!');
+      print('Budget "$budgetName" saved successfully to Firestore.');
+
+      // Optionally, clear the fields after successful save
+      _budgetNameController.clear();
+      _budgetAmountController.clear();
+
+      // You might want to navigate back after saving
+      // Navigator.pop(context);
+    } catch (e) {
+      _showSnackBar('Error saving budget: ${e.toString()}');
+      print('Error saving budget to Firestore: $e');
+    }
   }
 
   // Helper function to show a SnackBar message
