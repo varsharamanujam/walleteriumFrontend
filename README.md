@@ -70,3 +70,5 @@ LLM + RAG + Tools Approach Using Only Google Products
 - Agentic: The Gemini LLM acts autonomously, proactively, and contextually; it chooses tools, fetches data (RAG), and calls Google APIs as needed.
 - Fully Google Stack: Identity, cloud, AI, analytics, auth, presentation—all Google products.
 - Scalable & Secure: Leverages Google Cloud's infrastructure for compliance and reliability.
+<img width="1232" height="996" alt="UIflow drawio" src="https://github.com/user-attachments/assets/7fdc4db0-cb66-4702-8728-d051aa929651" />
+
