@@ -1,6 +1,17 @@
 # Walleterium Imperium - Agentic AI Money Manager App
 LLM + RAG + Tools Approach Using Only Google Products
 
+
+## 🏆 Hackathon Showcase: Key Results
+
+Here's a quick showcase of what Walleterium Imperium can do. These images highlight the core features and user interactions.
+
+![Onboarding-1](docs/git_artifacts/1.jpg)
+![Onboarding-2](docs/git_artifacts/2.jpg)
+![Receipt-1](docs/git_artifacts/3.jpg)
+![Receipt-2](docs/git_artifacts/4.jpg)
+![Receipt-3](docs/git_artifacts/5.jpg)
+
 ## Module 1: User & Account Management
 ## Sub-Module 1.1: AI-Powered Interactive Onboarding
 
