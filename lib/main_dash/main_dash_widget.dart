@@ -20,7 +20,7 @@ import '/auth/firebase_auth/auth_util.dart';
 import '/index.dart';
 import '/backend/backend.dart';
 import 'package:walleterium/feature1/settings_screen.dart'; // Ensure this import is correct
-// REMOVED: import 'package:walleterium/feature1/budget_goals_screen.dart'; // BudgetGoalsScreen is parked
+import 'package:walleterium/feature1/budget_goals_screen.dart'; // BudgetGoalsScreen is parked
 import 'dart:convert'; // <<< ADDED: For jsonEncode
 import 'package:intl/intl.dart'; // <<< ADDED: For NumberFormat
 
@@ -322,18 +322,18 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
             // REMOVED: IconButton for BudgetGoalsScreen
-            // IconButton(
-            //   icon: Icon(Icons.edit_note),
-            //   onPressed: () {
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(
-            //         builder: (context) => BudgetGoalsScreen(),
-            //       ),
-            //     );
-            //   },
-            // ),
-            // SizedBox(width: 48), // The space for the FAB
+            IconButton(
+              icon: Icon(Icons.edit_note),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BudgetGoalsScreen(),
+                  ),
+                );
+              },
+            ),
+            SizedBox(width: 48), // The space for the FAB
             IconButton(
               icon: Icon(Icons.smart_toy),
               onPressed: () {
