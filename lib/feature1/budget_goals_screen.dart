@@ -8,6 +8,7 @@ import '/auth/firebase_auth/auth_util.dart';
 import 'package:uuid/uuid.dart';
 import 'package:add_to_google_wallet/widgets/add_to_google_wallet_button.dart';
 import 'dart:convert';
+import 'package:intl/intl.dart';
 
 class BudgetGoalsScreen extends StatefulWidget {
   const BudgetGoalsScreen({super.key});
@@ -37,6 +38,9 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
 
   // Control visibility of the wallet button after saving
   bool _showWalletButton = false; // <<< ADDED: State to control button visibility
+
+  List<DocumentSnapshot> _budgets = []; // List to hold fetched budget documents
+  DocumentSnapshot? _selectedBudget; // Holds the budget currently being edited
 
   @override
   void initState() {
@@ -77,23 +81,22 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
     }
   }
 
-  // Getter to dynamically create the Google Wallet pass payload based on user input
   String get _passPayload {
     final String budgetName = _budgetNameController.text.trim();
-    final String budgetAmount = _budgetAmountController.text.trim(); // Keep as string for display
+    final String budgetAmount = _budgetAmountController.text.trim();
 
     final payloadMap = {
-      "iss": _serviceAccountEmail, // Issuer email (service account email)
-      "aud": "google", // Audience is always "google" for Wallet API
-      "typ": "savetowallet", // Type for saving a pass
-      "origins": [], // Optional: list of authorized web origins
+      "iss": _serviceAccountEmail,
+      "aud": "google",
+      "typ": "savetowallet",
+      "origins": [],
       "payload": {
         "genericObjects": [
           {
-            "id": "$_issuerId.$_passId", // Unique ID for this specific pass instance
-            "classId": "$_issuerId.$_passClass", // ID of the pass class (defines design/type)
+            "id": "$_issuerId.$_passId",
+            "classId": "$_issuerId.$_passClass",
             "genericType": "GENERIC_TYPE_UNSPECIFIED",
-            "hexBackgroundColor": "#4285f4", // Google Blue
+            "hexBackgroundColor": "#4285f4",
             "logo": {
               "sourceUri": {
                 "uri": "https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg"
@@ -102,24 +105,24 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
             "cardTitle": {
               "defaultValue": {
                 "language": "en",
-                "value": "Budget: $budgetName" // Dynamic budget name
+                "value": "Budget: $budgetName"
               }
             },
             "subheader": {
               "defaultValue": {
                 "language": "en",
-                "value": "Amount Set" // Subheader
+                "value": "Amount Set"
               }
             },
             "header": {
               "defaultValue": {
                 "language": "en",
-                "value": "₹$budgetAmount" // Display the budget amount here
+                "value": "₹$budgetAmount"
               }
             },
             "barcode": {
               "type": "QR_CODE",
-              "value": _passId // Barcode value can be the pass ID
+              "value": _passId
             },
             "heroImage": {
               "sourceUri": {
@@ -152,7 +155,33 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
     super.dispose();
   }
 
-  // Function to handle saving the budget data and making the Wallet Pass button visible
+  // --- NEW: Function to fetch budgets from Firestore ---
+  void _fetchBudgets() {
+    final user = currentUser;
+    if (user == null) {
+      print('User not logged in, cannot fetch budgets.');
+      return;
+    }
+
+    // Listen for real-time updates to the 'user_budgets' collection
+    FirebaseFirestore.instance
+        .collection('user_budgets')
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _budgets = snapshot.docs;
+          print('Budgets fetched: ${_budgets.length} items.');
+        });
+      }
+    }, onError: (error) {
+      print('Error fetching budgets: $error');
+      _showSnackBar('Error loading your budgets.');
+    });
+  }
+
+  // Function to handle saving/updating budget data and making the Wallet Pass button visible
   Future<void> _saveBudget() async {
     final String budgetName = _budgetNameController.text.trim();
     final double? budgetAmount = double.tryParse(_budgetAmountController.text.trim());
@@ -171,40 +200,102 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
 
     _showSnackBar('Saving budget...');
     print('Attempting to save budget to Firestore:');
-    print('  Budget Name: $budgetName');
-    print('  Budget Amount: $budgetAmount');
-    print('  User ID: ${user.uid}');
 
     try {
-      // 1. Save the budget data to Firestore
-      await FirebaseFirestore.instance.collection('user_budgets').add({
+      final budgetData = {
         'userId': user.uid,
         'budgetName': budgetName,
         'budgetAmount': budgetAmount,
         'createdAt': FieldValue.serverTimestamp(),
-        'walletPassId': _passId, // IMPORTANT: Save the generated pass ID for future updates
-      });
+        'walletPassId': _passId, // Save the generated pass ID for future updates
+      };
 
-      _showSnackBar('Budget "$budgetName" saved successfully to Firestore!');
-      print('Budget "$budgetName" saved successfully to Firestore.');
+      if (_selectedBudget == null) {
+        // Add new budget
+        await FirebaseFirestore.instance.collection('user_budgets').add(budgetData);
+        _showSnackBar('Budget "$budgetName" saved successfully to Firestore!');
+        print('Budget "$budgetName" saved successfully to Firestore.');
+      } else {
+        // Update existing budget
+        await _selectedBudget!.reference.update(budgetData);
+        _showSnackBar('Budget "$budgetName" updated successfully in Firestore!');
+        print('Budget "$budgetName" updated successfully in Firestore.');
+        _clearForm(); // Clear form after update
+      }
 
-      // 2. Make the Google Wallet Pass button visible
+      // Make the Google Wallet Pass button visible
       setState(() {
-        _showWalletButton = true; // <<< Set to true to show the button
+        _showWalletButton = true;
       });
       _showSnackBar('Budget saved. Now tap "Add to Google Wallet" to save the pass.');
       print('BudgetGoalsScreen: Google Wallet button is now visible.');
 
-      // Optionally, clear the fields after successful save
-      // _budgetNameController.clear();
-      // _budgetAmountController.clear();
-
-      // You might want to navigate back after saving
-      // Navigator.pop(context);
     } catch (e) {
       _showSnackBar('Error saving budget: ${e.toString()}');
       print('Error saving budget to Firestore: $e');
     }
+  }
+
+  // --- NEW: Function to set form fields for editing ---
+  void _editBudget(DocumentSnapshot budget) {
+    setState(() {
+      _selectedBudget = budget;
+      _budgetNameController.text = budget['budgetName'];
+      _budgetAmountController.text = budget['budgetAmount'].toString();
+      // If you want to allow editing the passId, you'd update _passId here too,
+      // but typically passId is immutable once created for a specific pass instance.
+      // For simplicity, we'll keep _passId unique per form submission,
+      // meaning editing won't change the Wallet Pass ID of an existing pass.
+      // If you need to update an existing Wallet Pass, you'd use a backend function.
+    });
+    _showSnackBar('Editing budget: ${budget['budgetName']}');
+  }
+
+  // --- NEW: Function to delete a budget ---
+  Future<void> _deleteBudget(String docId) async {
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (alertDialogContext) {
+        return AlertDialog(
+          title: const Text('Confirm Delete'),
+          content: const Text('Are you sure you want to delete this budget?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(alertDialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(alertDialogContext, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('user_budgets').doc(docId).delete();
+      _showSnackBar('Budget deleted successfully!');
+      print('Budget $docId deleted from Firestore.');
+      _clearForm(); // Clear form if the deleted budget was being edited
+    } catch (e) {
+      _showSnackBar('Error deleting budget: ${e.toString()}');
+      print('Error deleting budget: $e');
+    }
+  }
+
+  // --- NEW: Function to clear the form and reset selected budget ---
+  void _clearForm() {
+    setState(() {
+      _selectedBudget = null;
+      _budgetNameController.clear();
+      _budgetAmountController.clear();
+      _passId = const Uuid().v4(); // Generate a new passId for a new budget
+      _showWalletButton = false; // Hide wallet button for new entry
+    });
+    _showSnackBar('Form cleared. Ready to add a new budget.');
   }
 
   // Helper function to show a SnackBar message
@@ -221,6 +312,14 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
         title: const Text('Set Budget'),
         backgroundColor: FlutterFlowTheme.of(context).primary,
         foregroundColor: Colors.white,
+        actions: [
+          // Add a clear form button to add new budget after editing
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            tooltip: 'Add New Budget',
+            onPressed: _clearForm,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -228,7 +327,7 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Define Your Budget',
+              _selectedBudget == null ? 'Define Your Budget' : 'Edit Budget', // Dynamic title
               style: FlutterFlowTheme.of(context).headlineMedium,
             ),
             const SizedBox(height: 16),
@@ -261,10 +360,10 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
               style: FlutterFlowTheme.of(context).bodyMedium,
             ),
             const SizedBox(height: 32),
-            // Save Budget Button
+            // Save/Update Budget Button
             FFButtonWidget(
-              onPressed: _saveBudget, // Call the save function
-              text: 'Save Budget',
+              onPressed: _saveBudget, // Call the save/update function
+              text: _selectedBudget == null ? 'Save Budget' : 'Update Budget', // Dynamic button text
               options: FFButtonOptions(
                 width: double.infinity,
                 height: 50,
@@ -311,6 +410,79 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                   padding: EdgeInsets.all(8.0),
                   child: CircularProgressIndicator(), // Show loading if key not ready
                 ),
+            
+            const SizedBox(height: 40), // Spacing before the list of budgets
+            Text(
+              'My Budgets',
+              style: FlutterFlowTheme.of(context).headlineMedium,
+            ),
+            const SizedBox(height: 16),
+
+            // --- List of Budgets (Table-like view) ---
+            _budgets.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text('No budgets set yet. Add one above!'),
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true, // Important for nested ListView in SingleChildScrollView
+                    physics: const NeverScrollableScrollPhysics(), // Disable scrolling for nested list
+                    itemCount: _budgets.length,
+                    itemBuilder: (context, index) {
+                      final budgetDoc = _budgets[index];
+                      final budgetData = budgetDoc.data() as Map<String, dynamic>;
+                      final budgetName = budgetData['budgetName'] ?? 'N/A';
+                      final budgetAmount = budgetData['budgetAmount'] ?? 0.0;
+                      final formattedAmount = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(budgetAmount);
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      budgetName,
+                                      style: FlutterFlowTheme.of(context).titleMedium,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      formattedAmount,
+                                      style: FlutterFlowTheme.of(context).headlineSmall.override(
+                                            fontFamily: 'Inter',
+                                            color: FlutterFlowTheme.of(context).primaryText,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Edit Button
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () => _editBudget(budgetDoc),
+                                tooltip: 'Edit Budget',
+                              ),
+                              // Delete Button
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                onPressed: () => _deleteBudget(budgetDoc.id),
+                                tooltip: 'Delete Budget',
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ],
         ),
       ),
