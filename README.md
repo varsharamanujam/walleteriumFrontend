@@ -6,6 +6,9 @@ LLM + RAG + Tools Approach Using Only Google Products
 
 Here's a quick showcase of what Walleterium Imperium can do. These images highlight the core features and user interactions.
 
+[WALLET VIDEO DEMO](https://drive.google.com/file/d/1OPAnnkUBXNeo_xJHoioyEqRVm66oP8yj/view?usp=drivesdk) 
+
+
 ![Onboarding-1](docs/git_artifacts/1.jpg)
 ![Onboarding-2](docs/git_artifacts/2.jpg)
 ![Receipt-1](docs/git_artifacts/3.jpg)
