@@ -8,40 +8,30 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-// class Message { // Commented out as per request
-//   final String text; // Commented out as per request
-//   final bool isFromUser; // Commented out as per request
-//   Message({required this.text, required this.isFromUser}); // Commented out as per request
-// } // Commented out as per request
+
+
+import 'message.dart';
 
 class AIConversationalOnboardingScreenModel
     extends FlutterFlowModel<AIConversationalOnboardingScreenWidget> {
   ///  State fields for stateful widgets in this page.
 
-  // TextEditingController userMessageInputTextController = TextEditingController(); // Commented out as per request
-  // FocusNode? userMessageInputFocusNode; // Keep this as nullable if FlutterFlow might not always initialize it // Commented out as per request
+  TextEditingController? userMessageInputTextController;
+  FocusNode? userMessageInputFocusNode;
 
-  // String? Function(BuildContext, String?)? // Commented out as per request
-  //     userMessageInputTextControllerValidator; // Commented out as per request
+  String? Function(BuildContext, String?)?
+      userMessageInputTextControllerValidator;
 
-  // List<Message> conversation = []; // Commented out as per request
+  List<Message> conversation = [];
 
   @override
   void initState(BuildContext context) {
-    // If userMessageInputFocusNode is always expected to be non-null
-    // by the time initState completes, you could initialize it here too:
-    // userMessageInputFocusNode = FocusNode();
+    userMessageInputFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
-    // Safely dispose of nullable FocusNode
-    // userMessageInputFocusNode?.dispose(); // Commented out as per request
-
-    // Dispose of non-nullable TextEditingController
-    // userMessageInputTextController.dispose(); // Commented out as per request
-
-    // Call super.dispose() *last*
-    // super.dispose(); only if its not abstract class
+    userMessageInputFocusNode?.dispose();
+    userMessageInputTextController?.dispose();
   }
 }

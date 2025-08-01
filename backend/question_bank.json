@@ -1,0 +1,59 @@
+
+[
+  {
+    "id": "q1",
+    "question_text": "When you think of your 'assets', what comes to mind first?",
+    "context_tag": "asset_definition",
+    "answer_type": "option",
+    "options": ["Savings", "Gold/Jewelry", "Property", "Stocks/Mutual Funds", "Crypto", "Collectibles/Art", "Other"],
+    "persona_signal": {
+      "Savings": {"persona": "Saver", "increment": 1},
+      "Crypto": {"persona": "Innovator", "increment": 1},
+      "Stocks/Mutual Funds": {"persona": "Investor", "increment": 1}
+    }
+  },
+  {
+    "id": "q2",
+    "question_text": "When managing your money, do you prefer to keep things...",
+    "context_tag": "psychology",
+    "answer_type": "option",
+    "options": ["Very organized", "Somewhat managed", "Go with the flow", "I don’t think about it"],
+    "persona_signal": {
+      "Very organized": {"persona": "Planner", "increment": 1},
+      "Go with the flow": {"persona": "Adventurer", "increment": 1}
+    }
+  },
+  {
+    "id": "q3",
+    "question_text": "Imagine you received an unexpected bonus. What are you most likely to do?",
+    "context_tag": "psychology",
+    "answer_type": "option",
+    "options": ["Invest or save it", "Spend on a want", "Donate or gift it", "Plan a trip", "Keep for an emergency"],
+     "persona_signal": {
+      "Invest or save it": {"persona": "Investor", "increment": 1},
+      "Spend on a want": {"persona": "Spender", "increment": 1},
+      "Plan a trip": {"persona": "Adventurer", "increment": 1}
+    }
+  },
+  {
+    "id": "q4",
+    "question_text": "How do you feel about market risks when investing?",
+    "context_tag": "risk",
+    "answer_type": "option",
+    "options": ["Avoid at all costs", "Willing to take some risk if the reward is good", "Excited by taking risks"],
+    "persona_signal": {
+      "Avoid at all costs": {"persona": "Cautious", "increment": 1},
+      "Excited by taking risks": {"persona": "RiskTaker", "increment": 1}
+    }
+  },
+  {
+    "id": "q5",
+    "question_text": "On a typical month, do you track what you spend?",
+    "context_tag": "spending",
+    "answer_type": "option",
+    "options": ["Always", "Sometimes", "Rarely"],
+    "persona_signal": {
+      "Always": {"persona": "Planner", "increment": 1}
+    }
+  }
+]

@@ -2,13 +2,15 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart'; // Commented out as per request
-// import 'package:cloud_functions/cloud_functions.dart'; // Commented out as per request
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '/auth/firebase_auth/auth_util.dart';
-// import '/index.dart'; // Commented out as per request
-// import 'a_i_conversational_onboarding_screen_model.dart'; // Commented out as per request
-// export 'a_i_conversational_onboarding_screen_model.dart'; // Commented out as per request
-import 'package:walleterium/feature1/a_i_conversational_onboarding_screen/dummyData.dart'; // Import dummyData.dart
+import '/index.dart'; // Make sure this imports MainDashWidget
+import 'a_i_conversational_onboarding_screen_model.dart';
+export 'a_i_conversational_onboarding_screen_model.dart';
+import 'message.dart';
+export 'a_i_conversational_onboarding_screen_model.dart';
 
 class AIConversationalOnboardingScreenWidget extends StatefulWidget {
   const AIConversationalOnboardingScreenWidget({super.key});
@@ -23,188 +25,239 @@ class AIConversationalOnboardingScreenWidget extends StatefulWidget {
 
 class _AIConversationalOnboardingScreenWidgetState
     extends State<AIConversationalOnboardingScreenWidget> {
-  // late AIConversationalOnboardingScreenModel _model; // Commented out as per request
+  late AIConversationalOnboardingScreenModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  // String? _onboardingSessionId; // Commented out as per request
-  // bool _isLoading = true; // Commented out as per request
-  // bool _isConversationDone = false; // Commented out as per request
+  bool _isLoading = true;
+  bool _isConversationDone = false;
 
   @override
   void initState() {
     super.initState();
-    // _model = createModel(context, () => AIConversationalOnboardingScreenModel()); // Commented out as per request
-    // _model.userMessageInputTextController ??= TextEditingController(); // Commented out as per request
-    // _model.userMessageInputFocusNode ??= FocusNode(); // Commented out as per request
-    // _startOrResumeOnboarding(); // Commented out as per request
+    _model = createModel(context, () => AIConversationalOnboardingScreenModel());
+    _model.userMessageInputTextController ??= TextEditingController();
+    _model.userMessageInputFocusNode ??= FocusNode();
+    // Start the conversation with an initial message
+    _callAgenticOnboarding(initialMessage: "Hello"); 
   }
 
   @override
   void dispose() {
-    // _model.dispose(); // Commented out as per request
+    _model.dispose();
     super.dispose();
   }
 
-  // Commented out API related methods as per request
-  /*
-  Future<void> _startOrResumeOnboarding() async {
-    if (currentUser == null) {
-      setState(() {
-        _isLoading = false; // Set loading to false if no user
-      });
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('startOnboarding');
-      // For development, you can mock the current user if FirebaseAuth isn't fully set up locally
-      final results = await callable.call({'userId': currentUserUid ?? 'dummy_user_id'});
-      final data = results.data as Map<String, dynamic>;
-
-      _onboardingSessionId = data['sessionId'];
-      // Ensure 'messages' is treated as a List<dynamic> before mapping
-      final messages = (data['messages'] as List<dynamic>)
-          .map((m) => Message(
-              text: m['text'] as String, isFromUser: m['sender'] == 'user'))
-          .toList();
-
-      setState(() {
-        _model.conversation = messages;
-        _isLoading = false;
-        _isConversationDone = data['isDone'] ?? false;
-      });
-    } catch (e) {
-      print('Error starting onboarding: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error starting onboarding. Please try again.')),
-      );
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _handleUserMessage() async {
-    final text = _model.userMessageInputTextController.text;
-    if (text.isEmpty || _onboardingSessionId == null) {
+  Future<void> _callAgenticOnboarding({String? initialMessage}) async {
+    final text = initialMessage ?? _model.userMessageInputTextController!.text;
+    if (text.isEmpty) {
       return;
     }
 
     final userMessage = Message(text: text, isFromUser: true);
 
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _model.conversation.add(userMessage);
       _isLoading = true;
     });
-    _model.userMessageInputTextController.clear();
+
+    if (initialMessage == null) {
+      _model.userMessageInputTextController!.clear();
+    }
 
     try {
-      final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('postToOnboarding');
-      final results = await callable.call({
-        'sessionId': _onboardingSessionId,
-        'message': text,
-      });
-
-      final data = results.data as Map<String, dynamic>;
-      final aiResponse =
-          Message(text: data['response'] as String, isFromUser: false);
-
-      setState(() {
-        _model.conversation.add(aiResponse);
-        _isConversationDone = data['isDone'] ?? false;
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('Error sending message: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error sending message. Please try again.')),
+            // Use 10.0.2.2 for Android emulator to connect to host localhost
+      final url = Uri.parse('http://10.0.2.2:8081/agenticOnboarding');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': currentUserUid ?? 'dummy_user_id',
+          'message': text,
+          'history': _model.conversation.map((m) => {
+            'text': m.text,
+            'isFromUser': m.isFromUser
+          }).toList(),
+        }),
       );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final aiResponse =
+            Message(text: data['response'] as String, isFromUser: false);
+
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _model.conversation.add(aiResponse);
+          _isConversationDone = data['isDone'] ?? false;
+          _isLoading = false;
+        });
+
+        if (_isConversationDone) {
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              context.goNamed(MainDashWidget.routeName);
+            }
+          });
+        }
+      } else {
+        throw Exception('Failed to load data from the server');
+      }
+    } catch (e) {
+      print('Error calling agenticOnboarding: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Error communicating with the assistant. Please try again.')),
+        );
+      }
+      
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _isLoading = false;
-        _model.conversation.remove(userMessage); // Remove user message on error
+        _model.conversation.remove(userMessage);
       });
     }
   }
-
-  Future<void> _completeOnboarding() async {
-    // The backend should handle marking the user as complete.
-    // This navigation assumes the backend has finished its work.
-    context.goNamed(MainDashWidget.routeName);
-  }
-
-  // New method to populate dummy conversation data
-  void _populateDummyConversation() {
-    setState(() {
-      _model.conversation = [
-        Message(text: "Hello! I'm here to help you set up your wallet. What's your primary goal with this app?", isFromUser: false),
-        Message(text: "My goal is to track my spending and save money.", isFromUser: true),
-        Message(text: "That's a great goal! Are you interested in budgeting tools or investment insights?", isFromUser: false),
-        Message(text: "Budgeting tools would be really helpful for me.", isFromUser: true),
-        Message(text: "Excellent! We have several budgeting features. Is there any specific type of budget you're looking for, like a monthly budget or category-based tracking?", isFromUser: false),
-        Message(text: "A monthly budget would be ideal.", isFromUser: true),
-        Message(text: "Got it! Your onboarding is now complete. We've set up your profile to focus on monthly budgeting. You can always adjust these settings later. Enjoy using the app!", isFromUser: false),
-      ];
-      _isConversationDone = true; // Mark as done for dummy data
-      _isLoading = false; // Ensure loading is off
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Dummy conversation loaded!')),
-    );
-  }
-
-  // Existing method to upload dummy Firestore data (from your provided code)
-  Future<void> _uploadDummyFirestoreData() async {
-    try {
-      final data = {
-        'name': 'Test User from Onboarding',
-        'email': 'testuser_onboarding@example.com',
-        'timestamp': FieldValue.serverTimestamp(),
-        'role': 'onboarding_tester',
-      };
-      await FirebaseFirestore.instance.collection('demoEntries').add(data);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Dummy Firestore data uploaded successfully!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error uploading Firestore data: $e')),
-      );
-    }
-  }
-  */
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        body: Center(
-          child: FFButtonWidget(
-            onPressed: () async {
-              await uploadDummyData(context);
-            },
-            text: 'Populate Dummy Data & Continue',
-            options: FFButtonOptions(
-              width: 250,
-              height: 50,
-              color: FlutterFlowTheme.of(context).primary,
-              textStyle: FlutterFlowTheme.of(context).titleSmall.override(
-                    fontFamily: 'Plus Jakarta Sans',
-                    color: Colors.white,
-                    fontSize: 16,
+    return AuthUserStreamWidget(
+      builder: (context) {
+        if (currentUserUid.isEmpty) {
+          return const Scaffold( // Added 'const'
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        // Call _callAgenticOnboarding here, after currentUserUid is available
+        // This ensures the initial "Hello" is sent once the user is authenticated.
+        // It should be fine as it's called in addPostFrameCallback.
+        
+
+        return GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Scaffold(
+            key: scaffoldKey,
+            backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+            appBar:
+             AppBar(
+              title: const Text('AI Onboarding'), // Added 'const'
+              backgroundColor: FlutterFlowTheme.of(context).primary,
+              automaticallyImplyLeading: false,
+            ),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      reverse: true,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: _model.conversation.map((message) {
+                          return ListTile(
+                            title: Align(
+                              alignment: message.isFromUser
+                                  ? Alignment.centerRight
+                                  : Alignment.centerLeft,
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: message.isFromUser
+                                      ? FlutterFlowTheme.of(context).primary
+                                      : FlutterFlowTheme.of(context)
+                                          .secondaryBackground,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  message.text,
+                                  style: FlutterFlowTheme.of(context)
+                                      .bodyMedium
+                                      .override(
+                                        fontFamily: 'Plus Jakarta Sans',
+                                        color: message.isFromUser
+                                            ? Colors.white
+                                            : FlutterFlowTheme.of(context)
+                                                .primaryText,
+                                      ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ),
-              borderRadius: BorderRadius.circular(12),
+                  if (_isLoading && _model.conversation.isNotEmpty)
+                    const Padding( // Added 'const'
+                      padding: EdgeInsets.all(8.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  if (!_isConversationDone)
+                    Padding(
+                      padding: const EdgeInsets.all(8.0), // Added 'const'
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _model.userMessageInputTextController,
+                              focusNode: _model.userMessageInputFocusNode,
+                              decoration: InputDecoration(
+                                hintText: 'Type your message...',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onFieldSubmitted: (_) => _callAgenticOnboarding(),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.send), // Added 'const'
+                            onPressed: () => _callAgenticOnboarding(),
+                            color: FlutterFlowTheme.of(context).primary,
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.all(16.0), // Added 'const'
+                      child: FFButtonWidget(
+                        onPressed: () =>
+                            context.goNamed(MainDashWidget.routeName),
+                        text: 'Continue to Dashboard',
+                        options: FFButtonOptions(
+                          width: double.infinity,
+                          height: 50,
+                          color: FlutterFlowTheme.of(context).primary,
+                          textStyle:
+                              FlutterFlowTheme.of(context).titleSmall.override(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    color: Colors.white,
+                                  ),
+                          elevation: 3,
+                          borderSide: const BorderSide( // Added 'const'
+                            color: Colors.transparent,
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

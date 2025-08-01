@@ -1,3 +1,4 @@
+// lib/main_dash/main_dash_widget.dart
 
 import 'package:add_to_google_wallet/widgets/add_to_google_wallet_button.dart';
 import 'package:uuid/uuid.dart';
@@ -6,7 +7,6 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart'; // Added import
 import 'package:file_picker/file_picker.dart'; // Added import
 import 'package:firebase_storage/firebase_storage.dart'; // Added import
@@ -15,14 +15,13 @@ export 'main_dash_model.dart';
 import 'dart:io';
 import 'notification_card_widget.dart';
 import 'transaction/transaction_list_screen.dart'; // For actionable notification navigation
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/index.dart';
 import '/backend/backend.dart';
 import 'package:walleterium/feature1/settings_screen.dart'; // Ensure this import is correct
 import 'package:walleterium/feature1/budget_goals_screen.dart'; // BudgetGoalsScreen is parked
-import 'dart:convert'; // <<< ADDED: For jsonEncode
-import 'package:intl/intl.dart'; // <<< ADDED: For NumberFormat
+// <<< ADDED: For jsonEncode
+// <<< ADDED: For NumberFormat
 
 class MainDashWidget extends StatefulWidget {
   const MainDashWidget({super.key});
@@ -43,21 +42,21 @@ class _MainDashWidgetState extends State<MainDashWidget> {
   List<UserAccountsRecord> _accounts = [];
   List<UserAssetsRecord> _assets = []; // Your assets list
 
-  // --- GOOGLE WALLET SPECIFIC VARIABLES (MOVED INSIDE THE CLASS) ---
+  // --- GOOGLE WALLET SPECIFIC VARIABLES ---
   final String _passId = const Uuid().v4(); // Unique ID for this pass
   // IMPORTANT: Replace with your actual Issuer ID
-  final String _issuerId = '3388000000022969114'; // <<< REPLACE WITH YOUR ISSUER ID
+  final String _issuerId = 'YOUR_ISSUER_ID'; // <<< REPLACE WITH YOUR ISSUER ID
   // IMPORTANT: Replace with your Service Account's email from the JSON key
-  final String _serviceAccountEmail = 'google-wallet-issuer-svc@walleterium.iam.gserviceaccount.com'; // <<< REPLACE WITH YOUR SERVICE ACCOUNT EMAIL
+  final String _serviceAccountEmail = 'YOUR_SERVICE_ACCOUNT_EMAIL@your-project-id.iam.gserviceaccount.com'; // <<< REPLACE WITH YOUR SERVICE ACCOUNT EMAIL
   // This is the Class ID you must create in Google Wallet Console (e.g., 'asset_pass' or 'total_assets')
-  final String _issuerEmail = 'varshasureshbabu2402@gmail.com';
-
-  final String _passClass = 'budget'; // <<< You might need to create this class in the Wallet Console
+  final String _passClass = 'total_assets'; // <<< You might need to create this class in the Wallet Console
 
   // Variable to hold the entire content of your Service Account JSON key file
+  // This variable is still needed for _passPayload, but not passed directly to the button widget
   late String _serviceAccountKeyJson; // Will be loaded in initState
 
-   String get _passPayload {
+  // --- Getter for the pass payload - NOW DYNAMIC WITH ASSETS ---
+  String get _passPayload {
     // Calculate total assets from the fetched _assets list
     final double totalAssets = _assets.fold(0.0, (sum, asset) => sum + asset.currentValue);
     final formattedAssets = NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalAssets);
@@ -246,8 +245,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
         setState(() {
           _isLoading = false;
         });
-         ScaffoldMessenger.of(this.context).showSnackBar(
-          SnackBar(content: Text('Could not load dashboard data.')),
+         ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not load dashboard data.')),
         );
       }
     }
@@ -297,9 +296,9 @@ class _MainDashWidgetState extends State<MainDashWidget> {
       body: SafeArea(
         top: true,
         child: _isLoading
-            ? Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())
             : _walletUser == null
-                ? Center(child: Text('User data could not be loaded.'))
+                ? const Center(child: Text('User data could not be loaded.'))
                 : _buildDashboardUI(),
       ),
       floatingActionButton: FloatingActionButton(
@@ -312,30 +311,30 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           );
         },
         backgroundColor: FlutterFlowTheme.of(context).primary,
-        child: Icon(Icons.upload_file, color: Colors.white),
+        child: const Icon(Icons.upload_file, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
-        shape: CircularNotchedRectangle(),
+        shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
             // REMOVED: IconButton for BudgetGoalsScreen
             IconButton(
-              icon: Icon(Icons.edit_note),
+              icon: const Icon(Icons.edit_note),
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => BudgetGoalsScreen(),
+                    builder: (context) => const BudgetGoalsScreen(),
                   ),
                 );
               },
             ),
-            SizedBox(width: 48), // The space for the FAB
+            const SizedBox(width: 48), // The space for the FAB
             IconButton(
-              icon: Icon(Icons.smart_toy),
+              icon: const Icon(Icons.smart_toy),
               onPressed: () {
                 Navigator.pushNamed(context, '/ai_coach');
               },
@@ -351,8 +350,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
       child: Wrap(
         children: <Widget>[
           ListTile(
-            leading: Icon(Icons.image),
-            title: Text('Upload Image (Gallery)'),
+            leading: const Icon(Icons.image),
+            title: const Text('Upload Image (Gallery)'),
             onTap: () async {
               Navigator.pop(context);
               final ImagePicker picker = ImagePicker();
@@ -379,8 +378,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.video_library),
-            title: Text('Upload Video (Gallery)'),
+            leading: const Icon(Icons.video_library),
+            title: const Text('Upload Video (Gallery)'),
             onTap: () async {
               Navigator.pop(context);
               final ImagePicker picker = ImagePicker();
@@ -407,8 +406,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.camera_alt),
-            title: Text('Capture Image (Camera)'),
+            leading: const Icon(Icons.camera_alt),
+            title: const Text('Capture Image (Camera)'),
             onTap: () async {
               Navigator.pop(context);
               final ImagePicker picker = ImagePicker();
@@ -435,8 +434,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.videocam),
-            title: Text('Record Video (Camera)'),
+            leading: const Icon(Icons.videocam),
+            title: const Text('Record Video (Camera)'),
             onTap: () async {
               Navigator.pop(context);
               final ImagePicker picker = ImagePicker();
@@ -463,8 +462,8 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.picture_as_pdf),
-            title: Text('Upload PDF (File Picker)'),
+            leading: const Icon(Icons.picture_as_pdf),
+            title: const Text('Upload PDF (File Picker)'),
             onTap: () async {
               Navigator.pop(context);
               FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -546,15 +545,14 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           ),
           // --- RE-ADD THE WALLET BUTTON HERE ---
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
             child: Column(
               children: [
                 // Show loading indicator or the button based on key availability
-                if (mounted && (_serviceAccountKeyJson?.isNotEmpty ?? false))
-                  // FIX: Use AddToGoogleWalletButton directly without serviceAccountKey parameter
+                if (mounted && (_serviceAccountKeyJson.isNotEmpty ?? false))
                   AddToGoogleWalletButton(
                     pass: _passPayload, // Pass the dynamically generated payload for visual rendering
-                    // REMOVED: serviceAccountKey: _serviceAccountKeyJson, // This parameter is not supported by v0.0.5
+                    // serviceAccountKey: _serviceAccountKeyJson, // Pass the loaded key directly
                     onSuccess: () {
                       _showSnackBar(context, 'Total Assets Pass added to Wallet successfully!');
                       print('Google Wallet: Total Assets Pass added successfully.'); // Log success
@@ -574,7 +572,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                   )
                 else
                   const Padding(
-                    padding: EdgeInsets.all(8.0),
+                    padding: EdgeInsets.all(7.0),
                     child: CircularProgressIndicator(), // Show loading while key loads
                   ),
               ],
@@ -582,14 +580,14 @@ class _MainDashWidgetState extends State<MainDashWidget> {
           ),
           // --- END RE-ADDED WALLET BUTTON ---
           Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(16.0, 24.0, 0.0, 0.0),
+            padding: const EdgeInsetsDirectional.fromSTEB(16.0, 24.0, 0.0, 0.0),
             child: Text(
               'My Accounts',
               style: FlutterFlowTheme.of(context).titleLarge,
             ),
           ),
           _buildAccountsCarousel(),
-          _buildResetUserButton(),
+          // _buildResetUserButton(),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
             child: _buildNotificationsStack(),
@@ -601,7 +599,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
 
   Widget _buildNotificationsStack() {
     if (_sampleNotifications.isEmpty) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
     return Column(
       children: _sampleNotifications.map((json) {
@@ -611,7 +609,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => TransactionListScreen(),
+                  builder: (context) => const TransactionListScreen(),
                 ),
               );
             },
@@ -645,7 +643,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                 'Available Balance',
                 style: FlutterFlowTheme.of(context).labelLarge,
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 formattedBalance,
                 style: FlutterFlowTheme.of(context).titleLarge,
@@ -664,7 +662,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 2,
-      color: Color(0xFFE8F5E9),
+      color: const Color(0xFFE8F5E9),
       margin: const EdgeInsets.all(8.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
@@ -684,7 +682,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                       color: FlutterFlowTheme.of(context).success,
                     ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 formattedAssets,
                 style: FlutterFlowTheme.of(context).titleLarge.override(
@@ -701,11 +699,11 @@ class _MainDashWidgetState extends State<MainDashWidget> {
 
   Widget _buildAccountsCarousel() {
     if (_accounts.isEmpty) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
     return Padding(
-      padding: EdgeInsetsDirectional.fromSTEB(0.0, 12.0, 0.0, 0.0),
-      child: Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(0.0, 12.0, 0.0, 0.0),
+      child: SizedBox(
         width: double.infinity,
         height: 170.0,
         child: CarouselSlider.builder(
@@ -736,7 +734,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
     
     return Container(
       width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 8.0),
+      margin: const EdgeInsets.symmetric(horizontal: 8.0),
       child: InkWell(
         onTap: () {
           print('${account.accountName} card tapped!');
@@ -754,11 +752,11 @@ class _MainDashWidgetState extends State<MainDashWidget> {
         },
         borderRadius: BorderRadius.circular(16),
         child: Ink(
-          padding: EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
                 blurRadius: 4,
                 color: Color(0x33000000),
@@ -819,16 +817,16 @@ class _MainDashWidgetState extends State<MainDashWidget> {
             context: context,
             builder: (alertDialogContext) {
               return AlertDialog(
-                title: Text('Confirm Reset'),
-                content: Text('Are you sure you want to log out and delete all your data? This cannot be undone.'),
+                title: const Text('Confirm Reset'),
+                content: const Text('Are you sure you want to log out and delete all your data? This cannot be undone.'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(alertDialogContext, false),
-                    child: Text('Cancel'),
+                    child: const Text('Cancel'),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(alertDialogContext, true),
-                    child: Text('Reset'),
+                    child: const Text('Reset'),
                   ),
                 ],
               );
@@ -871,7 +869,7 @@ class _MainDashWidgetState extends State<MainDashWidget> {
                 color: Colors.white,
               ),
           elevation: 2,
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: Colors.transparent,
             width: 1,
           ),
@@ -892,7 +890,7 @@ Future<String?> uploadFileToFirebaseStorage({
   if (user == null) {
     print('Error: User is not logged in.');
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('You must be logged in to upload files.')),
+      const SnackBar(content: Text('You must be logged in to upload files.')),
     );
     return null;
   }
@@ -916,7 +914,7 @@ Future<String?> uploadFileToFirebaseStorage({
     
     print('File uploaded successfully: $downloadUrl');
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Upload successful!')),
+      const SnackBar(content: Text('Upload successful!')),
     );
     
     return downloadUrl;
@@ -948,7 +946,7 @@ Future<void> saveUploadedFileMetadata({
   } catch (e) {
     print('Error saving metadata to Firestore: $e');
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Could not save file details.')),
+      const SnackBar(content: Text('Could not save file details.')),
     );
   }
 }

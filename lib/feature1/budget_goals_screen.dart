@@ -391,7 +391,7 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                       color: Colors.white,
                     ),
                 elevation: 3,
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: Colors.transparent,
                   width: 1,
                 ),
@@ -402,7 +402,7 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
 
             // --- Conditionally display the AddToGoogleWalletButton ---
             if (_showWalletButton) // Only show if _showWalletButton is true
-              if (_serviceAccountKeyJson?.isNotEmpty ?? false) // Also check if key is loaded
+              if (_serviceAccountKeyJson.isNotEmpty ?? false) // Also check if key is loaded
                 AddToGoogleWalletButton(
                   pass: _passPayload, // Pass the dynamically generated payload
                   // serviceAccountKey: _serviceAccountKeyJson, // Pass the loaded key

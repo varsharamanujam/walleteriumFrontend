@@ -3,16 +3,15 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 
 import '/backend/schema/util/firestore_util.dart';
-import '/backend/schema/util/schema_util.dart';
 
 import 'index.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 class UserProfilesRecord extends FirestoreRecord {
   UserProfilesRecord._(
-    DocumentReference reference,
-    Map<String, dynamic> data,
-  ) : super(reference, data) {
+    super.reference,
+    super.data,
+  ) {
     _initializeFields();
   }
 
@@ -46,6 +45,11 @@ class UserProfilesRecord extends FirestoreRecord {
   String get phoneNumber => _phoneNumber ?? '';
   bool hasPhoneNumber() => _phoneNumber != null;
 
+  // "financialProfile" field.
+  Map<String, dynamic>? _financialProfile;
+  Map<String, dynamic> get financialProfile => _financialProfile ?? {};
+  bool hasFinancialProfile() => _financialProfile != null;
+
   void _initializeFields() {
     _email = snapshotData['email'] as String?;
     _displayName = snapshotData['display_name'] as String?;
@@ -53,6 +57,7 @@ class UserProfilesRecord extends FirestoreRecord {
     _uid = snapshotData['uid'] as String?;
     _createdTime = snapshotData['created_time'] as DateTime?;
     _phoneNumber = snapshotData['phone_number'] as String?;
+    _financialProfile = snapshotData['financialProfile'] as Map<String, dynamic>?;
   }
 
   static CollectionReference get collection =>
@@ -96,6 +101,7 @@ Map<String, dynamic> createUserProfilesRecordData({
   String? uid,
   DateTime? createdTime,
   String? phoneNumber,
+  Map<String, dynamic>? financialProfile,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -105,6 +111,7 @@ Map<String, dynamic> createUserProfilesRecordData({
       'uid': uid,
       'created_time': createdTime,
       'phone_number': phoneNumber,
+      'financialProfile': financialProfile,
     }.withoutNulls,
   );
 
@@ -122,7 +129,8 @@ class UserProfilesRecordDocumentEquality
         e1?.photoUrl == e2?.photoUrl &&
         e1?.uid == e2?.uid &&
         e1?.createdTime == e2?.createdTime &&
-        e1?.phoneNumber == e2?.phoneNumber;
+        e1?.phoneNumber == e2?.phoneNumber &&
+        e1?.financialProfile == e2?.financialProfile;
   }
 
   @override
@@ -132,7 +140,8 @@ class UserProfilesRecordDocumentEquality
         e?.photoUrl,
         e?.uid,
         e?.createdTime,
-        e?.phoneNumber
+        e?.phoneNumber,
+        e?.financialProfile
       ]);
 
   @override

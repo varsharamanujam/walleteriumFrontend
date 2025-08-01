@@ -10,7 +10,7 @@ import 'package:go_router/go_router.dart';
 
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({Key? key, required this.displayName, required this.email}) : super(key: key);
+  const SettingsScreen({super.key, required this.displayName, required this.email});
 
   final String displayName;
   final String email;
@@ -23,7 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _nameController;
   String _selectedPersona = 'Budgetor'; // Default persona
   String _selectedCurrency = '₹ INR'; // Default currency
-  Map<String, bool> _assetPreferences = {
+  final Map<String, bool> _assetPreferences = {
     'Real Estate': true,
     'Gold': true,
     'Stocks': true,
@@ -55,12 +55,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _selectedCurrency = walletUser.currency.isNotEmpty ? walletUser.currency : '₹ INR';
 
           // Load asset preferences, merge with defaults to ensure all options are present
-          if (walletUser.assetPreferences != null) {
-            _assetPreferences.forEach((key, value) {
-              _assetPreferences[key] = walletUser.assetPreferences![key] ?? value;
-            });
-          }
-        });
+          _assetPreferences.forEach((key, value) {
+            _assetPreferences[key] = walletUser.assetPreferences[key] ?? value;
+          });
+                });
       }
     } catch (e) {
       print('Error loading user settings: $e');
@@ -354,7 +352,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 controlAffinity: ListTileControlAffinity.leading,
                 activeColor: Theme.of(context).primaryColor,
               );
-            }).toList(),
+            }),
             const SizedBox(height: 24),
 
             // Notification Preferences (Placeholder)
@@ -420,7 +418,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: Colors.white,
                       ),
                   elevation: 2,
-                  borderSide: BorderSide(
+                  borderSide: const BorderSide(
                     color: Colors.transparent,
                     width: 1,
                   ),

@@ -70,3 +70,12 @@ LLM + RAG + Tools Approach Using Only Google Products
 - Agentic: The Gemini LLM acts autonomously, proactively, and contextually; it chooses tools, fetches data (RAG), and calls Google APIs as needed.
 - Fully Google Stack: Identity, cloud, AI, analytics, auth, presentation—all Google products.
 - Scalable & Secure: Leverages Google Cloud's infrastructure for compliance and reliability.
+
+Backend Code: Yes, the RAG pipeline I'm proposing will be implemented as backend code within your existing Firebase Functions.
+    Firebase Functions run on Google's servers, not directly on the user's device, making them a backend service.
+
+Python vs. Node.js: Your current Firebase Functions (index.js, api_manager.js) are written in Node.js (JavaScript). To
+    maintain consistency and leverage your existing setup, I plan to implement the RAG pipeline in Node.js as well. While Python
+    is a fantastic language for backend services and AI/ML, introducing it now would mean setting up a separate Python runtime
+    environment within Firebase Functions, which adds complexity. Sticking with Node.js allows us to integrate seamlessly with
+    your current functions.
