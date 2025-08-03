@@ -72,6 +72,10 @@ async def agentic_onboarding(request: OnboardingRequest):
     print(f"Received message from {request.userId}: {request.message}")
     print(f"Conversation history: {request.history}")
 
+    # If the message is empty, return a greeting
+    if not request.message.strip():
+        return OnboardingResponse(response="Hello! I'm Fin, your financial assistant. I'm here to help you get started. What's your name?", isDone=False)
+
     # Convert Flutter history to Gemini format
     gemini_history = []
     for msg in request.history:

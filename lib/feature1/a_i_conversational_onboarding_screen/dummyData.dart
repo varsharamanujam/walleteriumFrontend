@@ -7,7 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:walleterium/main_dash/main_dash_widget.dart';
 
 class DummyDataUploaderWidget extends StatefulWidget {
-  const DummyDataUploaderWidget({Key? key}) : super(key: key);
+  const DummyDataUploaderWidget({super.key});
 
   @override
   _DummyDataUploaderWidgetState createState() =>
@@ -49,7 +49,7 @@ Future<void> uploadDummyData(BuildContext context) async {
   final user = currentUser;
   if (user == null) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Please sign in first.')),
+      const SnackBar(content: Text('Please sign in first.')),
     );
     return;
   }
@@ -177,7 +177,7 @@ Future<void> uploadDummyData(BuildContext context) async {
     await batch.commit();
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Dummy financial data uploaded successfully!')),
+      const SnackBar(content: Text('Dummy financial data uploaded successfully!')),
     );
     print('Attempting to navigate to MainDashWidget...');
     // After successful upload, navigate to the main dashboard

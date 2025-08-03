@@ -20,6 +20,8 @@ import '/index.dart';
 import '/backend/backend.dart';
 import 'package:walleterium/feature1/settings_screen.dart'; // Ensure this import is correct
 import 'package:walleterium/feature1/budget_goals_screen.dart'; // BudgetGoalsScreen is parked
+import 'package:walleterium/feature1/language_selection_screen.dart';
+import 'package:walleterium/l10n/manual_localizations.dart';
 // <<< ADDED: For jsonEncode
 // <<< ADDED: For NumberFormat
 

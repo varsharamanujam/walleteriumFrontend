@@ -11,12 +11,12 @@ class NotificationCardWidget extends StatefulWidget {
   final VoidCallback? onTap; // --- Added for actionable notifications ---
 
   const NotificationCardWidget({
-    Key? key,
+    super.key,
     required this.data,
     this.collapsedHeight = 50,
     this.expandedHeight = 110,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<NotificationCardWidget> createState() => _NotificationCardWidgetState();
@@ -61,10 +61,10 @@ class _NotificationCardWidgetState extends State<NotificationCardWidget> {
         }
       },
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 250),
+        duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
         height: _expanded ? widget.expandedHeight : widget.collapsedHeight,
-        margin: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -72,7 +72,7 @@ class _NotificationCardWidgetState extends State<NotificationCardWidget> {
             color: _getBorderColor(type),
             width: 2.0,
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Colors.black12,
               blurRadius: 4,

@@ -202,7 +202,7 @@ List<Map<String, dynamic>> sampleTransactions = [
 ];
 
 class TransactionListScreen extends StatefulWidget {
-  const TransactionListScreen({Key? key}) : super(key: key);
+  const TransactionListScreen({super.key});
 
   @override
   State<TransactionListScreen> createState() => _TransactionListScreenState();
@@ -295,11 +295,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("Filters", style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text("Filters", style: TextStyle(fontWeight: FontWeight.bold)),
                           if (appliedFilters.isNotEmpty)
                             TextButton.icon(
-                              icon: Icon(Icons.clear_all),
-                              label: Text("Clear All"),
+                              icon: const Icon(Icons.clear_all),
+                              label: const Text("Clear All"),
                               onPressed: () {
                                 setState(() {
                                   appliedFilters.clear();
@@ -318,7 +318,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                               padding: const EdgeInsets.only(right: 6.0),
                               child: Chip(
                                 label: Text("${_prettyFieldLabel(e.key)}: ${e.value}"),
-                                deleteIcon: Icon(Icons.close),
+                                deleteIcon: const Icon(Icons.close),
                                 onDeleted: () {
                                   setState(() {
                                     appliedFilters.remove(e.key);
@@ -340,7 +340,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 ChoiceChip(
-                                  label: Row(children: [Icon(Icons.check, color: Colors.green), SizedBox(width: 4), Text(_prettyFieldLabel(field) + ': Yes')]),
+                                  label: Row(children: [const Icon(Icons.check, color: Colors.green), const SizedBox(width: 4), Text('${_prettyFieldLabel(field)}: Yes')]),
                                   selected: appliedFilters[field] == true,
                                   onSelected: (selected) {
                                     setState(() {
@@ -356,9 +356,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                                   selectedColor: Colors.green[100],
                                   showCheckmark: true,
                                 ),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 ChoiceChip(
-                                  label: Row(children: [Icon(Icons.close, color: Colors.red), SizedBox(width: 4), Text(_prettyFieldLabel(field) + ': No')]),
+                                  label: Row(children: [const Icon(Icons.close, color: Colors.red), const SizedBox(width: 4), Text('${_prettyFieldLabel(field)}: No')]),
                                   selected: appliedFilters[field] == false,
                                   onSelected: (selected) {
                                     setState(() {
@@ -386,14 +386,14 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                             return DropdownButton<String>(
                               hint: Text(
                                 _prettyFieldLabel(field),
-                                style: isDisabled ? TextStyle(color: Colors.grey) : null,
+                                style: isDisabled ? const TextStyle(color: Colors.grey) : null,
                               ),
                               value: isDisabled ? null : appliedFilters[field],
                               items: isDisabled
                                   ? [DropdownMenuItem(value: '', child: Text('No values', style: TextStyle(color: Colors.grey[400])))]
                                   : [
-                                      DropdownMenuItem(value: '', child: Text('Unset')),
-                                      ...values.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                                      const DropdownMenuItem(value: '', child: Text('Unset')),
+                                      ...values.map((v) => DropdownMenuItem(value: v, child: Text(v))),
                                     ],
                               onChanged: isDisabled
                                   ? null
@@ -408,20 +408,20 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                                       });
                                       setModalState(() {});
                                     },
-                              disabledHint: Text(_prettyFieldLabel(field), style: TextStyle(color: Colors.grey)),
+                              disabledHint: Text(_prettyFieldLabel(field), style: const TextStyle(color: Colors.grey)),
                             );
                           }
                         }).toList(),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("Sort By", style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text("Sort By", style: TextStyle(fontWeight: FontWeight.bold)),
                           if (sortBy.isNotEmpty)
                             TextButton.icon(
-                              icon: Icon(Icons.clear_all),
-                              label: Text("Clear All"),
+                              icon: const Icon(Icons.clear_all),
+                              label: const Text("Clear All"),
                               onPressed: () {
                                 setState(() {
                                   sortBy.clear();
@@ -440,7 +440,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                               padding: const EdgeInsets.only(right: 6.0),
                               child: Chip(
                                 label: Text(field),
-                                deleteIcon: Icon(Icons.close),
+                                deleteIcon: const Icon(Icons.close),
                                 onDeleted: () {
                                   setState(() {
                                     sortBy.remove(field);
@@ -459,7 +459,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                           return ChoiceChip(
                             label: Text(
                               field,
-                              style: !hasValues ? TextStyle(color: Colors.grey) : null,
+                              style: !hasValues ? const TextStyle(color: Colors.grey) : null,
                             ),
                             selected: sortBy.contains(field),
                             onSelected: !hasValues
@@ -483,7 +483,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       ),
                       Row(
                         children: [
-                          Text("Ascending"),
+                          const Text("Ascending"),
                           Switch(
                             value: sortAsc,
                             onChanged: (v) {
@@ -496,15 +496,15 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                           ),
                         ],
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("Group By", style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text("Group By", style: TextStyle(fontWeight: FontWeight.bold)),
                           if (groupBy.isNotEmpty)
                             TextButton.icon(
-                              icon: Icon(Icons.clear_all),
-                              label: Text("Clear All"),
+                              icon: const Icon(Icons.clear_all),
+                              label: const Text("Clear All"),
                               onPressed: () {
                                 setState(() {
                                   groupBy.clear();
@@ -523,7 +523,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                               padding: const EdgeInsets.only(right: 6.0),
                               child: Chip(
                                 label: Text(field),
-                                deleteIcon: Icon(Icons.close),
+                                deleteIcon: const Icon(Icons.close),
                                 onDeleted: () {
                                   setState(() {
                                     groupBy.remove(field);
@@ -542,7 +542,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                           return ChoiceChip(
                             label: Text(
                               field,
-                              style: !hasValues ? TextStyle(color: Colors.grey) : null,
+                              style: !hasValues ? const TextStyle(color: Colors.grey) : null,
                             ),
                             selected: groupBy.contains(field),
                             onSelected: !hasValues
@@ -591,7 +591,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Center(
             child: Card(
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               elevation: 8,
               child: Padding(
@@ -606,27 +606,27 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("Add Transaction", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                            const Text("Add Transaction", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                             IconButton(
-                              icon: Icon(Icons.close),
+                              icon: const Icon(Icons.close),
                               onPressed: () => Navigator.pop(ctx),
                             ),
                           ],
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         TextFormField(
-                          decoration: InputDecoration(labelText: "Amount", prefixIcon: Icon(Icons.currency_rupee)),
+                          decoration: const InputDecoration(labelText: "Amount", prefixIcon: Icon(Icons.currency_rupee)),
                           keyboardType: TextInputType.number,
                           validator: (v) => v == null || v.isEmpty ? 'Enter amount' : null,
                           onSaved: (v) => newTx['amount'] = int.tryParse(v ?? ''),
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         // --- TIME INPUT ---
-                        Text("Time", style: TextStyle(fontWeight: FontWeight.w600)),
+                        const Text("Time", style: TextStyle(fontWeight: FontWeight.w600)),
                         Row(
                           children: [
                             ChoiceChip(
-                              label: Row(children: [Icon(Icons.access_time, size: 18), SizedBox(width: 4), Text("Now")]),
+                              label: const Row(children: [Icon(Icons.access_time, size: 18), SizedBox(width: 4), Text("Now")]),
                               selected: timeInputMode == 0,
                               onSelected: (_) {
                                 timeInputMode = 0;
@@ -635,18 +635,18 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                                 (ctx as Element).markNeedsBuild();
                               },
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             ChoiceChip(
-                              label: Row(children: [Icon(Icons.edit_calendar, size: 18), SizedBox(width: 4), Text("Manual")]),
+                              label: const Row(children: [Icon(Icons.edit_calendar, size: 18), SizedBox(width: 4), Text("Manual")]),
                               selected: timeInputMode == 1,
                               onSelected: (_) {
                                 timeInputMode = 1;
                                 (ctx as Element).markNeedsBuild();
                               },
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             ChoiceChip(
-                              label: Row(children: [Icon(Icons.date_range, size: 18), SizedBox(width: 4), Text("Pick")]),
+                              label: const Row(children: [Icon(Icons.date_range, size: 18), SizedBox(width: 4), Text("Pick")]),
                               selected: timeInputMode == 2,
                               onSelected: (_) async {
                                 timeInputMode = 2;
@@ -676,11 +676,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                             ),
                           ],
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         if (timeInputMode == 1)
                           TextFormField(
                             controller: manualTimeController,
-                            decoration: InputDecoration(
+                            decoration: const InputDecoration(
                               labelText: "Enter ISO timestamp or yyyy-MM-dd HH:mm",
                               prefixIcon: Icon(Icons.edit),
                             ),
@@ -712,46 +712,46 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                             padding: const EdgeInsets.only(left: 4.0, top: 2.0),
                             child: Text("Picked: ${selectedDateTime.toString()}", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                           ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         TextFormField(
-                          decoration: InputDecoration(labelText: "Receiver", prefixIcon: Icon(Icons.person)),
+                          decoration: const InputDecoration(labelText: "Receiver", prefixIcon: Icon(Icons.person)),
                           onSaved: (v) => newTx['receiver'] = v,
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
-                          decoration: InputDecoration(labelText: "Type", prefixIcon: Icon(Icons.compare_arrows)),
+                          decoration: const InputDecoration(labelText: "Type", prefixIcon: Icon(Icons.compare_arrows)),
                           items: ["credit", "debit", "payment"].map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
                           onChanged: (v) => newTx['type'] = v,
                           onSaved: (v) => newTx['type'] = v,
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         // --- Extra fields under ExpansionTile ---
                         ExpansionTile(
-                          title: Text("More Fields"),
+                          title: const Text("More Fields"),
                           children: [
                             TextFormField(
-                              decoration: InputDecoration(labelText: "Purpose/Description", prefixIcon: Icon(Icons.notes)),
+                              decoration: const InputDecoration(labelText: "Purpose/Description", prefixIcon: Icon(Icons.notes)),
                               onSaved: (v) => newTx['purpose'] = v,
                             ),
                             TextFormField(
-                              decoration: InputDecoration(labelText: "Transaction ID", prefixIcon: Icon(Icons.confirmation_number)),
+                              decoration: const InputDecoration(labelText: "Transaction ID", prefixIcon: Icon(Icons.confirmation_number)),
                               onSaved: (v) => newTx['transactionId'] = v,
                             ),
                             TextFormField(
-                              decoration: InputDecoration(labelText: "Image URL", prefixIcon: Icon(Icons.image)),
+                              decoration: const InputDecoration(labelText: "Image URL", prefixIcon: Icon(Icons.image)),
                               onSaved: (v) => newTx['imageUrl'] = v,
                             ),
                             SwitchListTile(
-                              title: Text("Is Asset?"),
+                              title: const Text("Is Asset?"),
                               value: newTx['isAsset'] == true,
                               onChanged: (v) => setState(() => newTx['isAsset'] = v),
                             ),
                             // --- Nested JSON: Subscriptions ---
                             ExpansionTile(
-                              title: Text("Subscriptions (nested)"),
+                              title: const Text("Subscriptions (nested)"),
                               children: [
                                 TextFormField(
-                                  decoration: InputDecoration(labelText: "Rollover Date", prefixIcon: Icon(Icons.calendar_month)),
+                                  decoration: const InputDecoration(labelText: "Rollover Date", prefixIcon: Icon(Icons.calendar_month)),
                                   onSaved: (v) {
                                     if (v != null && v.isNotEmpty) {
                                       newTx['subscriptions'] ??= {};
@@ -760,7 +760,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                                   },
                                 ),
                                 SwitchListTile(
-                                  title: Text("Autopay Enabled"),
+                                  title: const Text("Autopay Enabled"),
                                   value: (newTx['subscriptions'] != null && newTx['subscriptions']['autopay_enabled'] == true),
                                   onChanged: (v) {
                                     setState(() {
@@ -773,17 +773,17 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                             ),
                           ],
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             TextButton(
-                              child: Text("Cancel"),
+                              child: const Text("Cancel"),
                               onPressed: () => Navigator.pop(ctx),
                             ),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             ElevatedButton(
-                              child: Text("Add"),
+                              child: const Text("Add"),
                               onPressed: () {
                                 if (formKey.currentState?.validate() ?? false) {
                                   formKey.currentState?.save();
@@ -842,10 +842,10 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Transactions'),
+        title: const Text('Transactions'),
         actions: [
           IconButton(
-            icon: Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list),
             onPressed: _showFilterSortSheet,
             tooltip: 'Filter/Sort/Group',
           ),
@@ -853,8 +853,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTransactionDialog,
-        child: Icon(Icons.add),
         tooltip: 'Add Transaction',
+        child: const Icon(Icons.add),
       ),
       body: Padding(
         padding: const EdgeInsets.only(top: 8.0),
@@ -876,7 +876,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
                         child: Text(
                           '${groupBy.join(' | ')}: ${entry.key}',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
                       ...entry.value.map((tx) => TransactionCardWidget(

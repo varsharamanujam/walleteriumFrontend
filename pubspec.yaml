@@ -109,6 +109,8 @@ dev_dependencies:
   lints: 4.0.0
   flutter_test:
     sdk: flutter
+  firebase_auth_mocks: 0.14.2
+  firebase_core_platform_interface: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

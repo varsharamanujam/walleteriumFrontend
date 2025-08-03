@@ -399,3 +399,4 @@ extension GoRouterLocationExtension on GoRouter {
     return matchList.uri.toString();
   }
 }
+

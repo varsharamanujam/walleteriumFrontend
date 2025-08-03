@@ -6,11 +6,11 @@ class TransactionCardWidget extends StatefulWidget {
   final VoidCallback? onDelete;
 
   const TransactionCardWidget({
-    Key? key,
+    super.key,
     required this.transaction,
     this.onEdit,
     this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   State<TransactionCardWidget> createState() => _TransactionCardWidgetState();
@@ -35,14 +35,14 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
     final txId = t['transactionId'];
 
     // --- IMPROVEMENT: Validate amount ---
-    bool validAmount = amount is num && amount != null;
+    bool validAmount = amount is num;
 
     return GestureDetector(
       onTap: () => setState(() => _expanded = !_expanded),
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 250),
-        margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        padding: EdgeInsets.all(16),
+        duration: const Duration(milliseconds: 250),
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isAsset ? Colors.amber[50] : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -50,7 +50,7 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
             color: isCredit ? Colors.green : Colors.red,
             width: 2,
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
           ],
@@ -77,7 +77,7 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
                         right: 2, bottom: 2,
                         child: Transform.rotate(
                           angle: 0.6, // Diagonal down
-                          child: Icon(Icons.arrow_downward, color: Colors.green, size: 20),
+                          child: const Icon(Icons.arrow_downward, color: Colors.green, size: 20),
                         ),
                       )
                     else if (isDebit)
@@ -85,17 +85,17 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
                         left: 2, top: 2,
                         child: Transform.rotate(
                           angle: -0.6, // Diagonal up
-                          child: Icon(Icons.arrow_upward, color: Colors.red, size: 20),
+                          child: const Icon(Icons.arrow_upward, color: Colors.red, size: 20),
                         ),
                       )
                     else if (isPayment)
-                      Positioned(
+                      const Positioned(
                         bottom: 2, right: 2,
                         child: Icon(Icons.swap_horiz, color: Colors.blue, size: 20),
                       )
                   ],
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,7 +113,7 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
                       else
                         Text(
                           amount == null ? "No Amount" : "Invalid Amount",
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.orange,
@@ -146,12 +146,12 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
                   spacing: 0,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.edit, color: Colors.blueAccent),
+                      icon: const Icon(Icons.edit, color: Colors.blueAccent),
                       onPressed: widget.onEdit,
                       tooltip: "Edit",
                     ),
                     IconButton(
-                      icon: Icon(Icons.delete_outline, color: Colors.redAccent),
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                       onPressed: widget.onDelete,
                       tooltip: "Delete",
                     ),
@@ -167,57 +167,57 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
                 children: [
                   if (isAsset)
                     Container(
-                      margin: EdgeInsets.only(bottom: 4),
+                      margin: const EdgeInsets.only(bottom: 4),
                       child: Chip(
                         label: ConstrainedBox(
                           constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width - 100),
-                          child: Text(
+                          child: const Text(
                             "Asset",
                             style: TextStyle(color: Colors.white),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         backgroundColor: Colors.amber[700],
-                        avatar: Icon(Icons.savings, color: Colors.white),
+                        avatar: const Icon(Icons.savings, color: Colors.white),
                       ),
                     ),
                   if (isRecurring)
                     Container(
-                      margin: EdgeInsets.only(bottom: 4),
+                      margin: const EdgeInsets.only(bottom: 4),
                       child: Chip(
                         label: ConstrainedBox(
                           constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width - 100),
-                          child: Text(
+                          child: const Text(
                             "Recurring",
                             style: TextStyle(color: Colors.white),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         backgroundColor: Colors.purple[400],
-                        avatar: Icon(Icons.repeat, color: Colors.white),
+                        avatar: const Icon(Icons.repeat, color: Colors.white),
                       ),
                     ),
                   if (hasBenefits)
                     Container(
-                      margin: EdgeInsets.only(bottom: 4),
+                      margin: const EdgeInsets.only(bottom: 4),
                       child: Chip(
                         label: ConstrainedBox(
                           constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width - 100),
-                          child: Text(
+                          child: const Text(
                             "Benefits",
                             style: TextStyle(color: Colors.white),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         backgroundColor: Colors.teal[400],
-                        avatar: Icon(Icons.verified, color: Colors.white),
+                        avatar: const Icon(Icons.verified, color: Colors.white),
                       ),
                     ),
                 ],
               ),
             ),
             if (_expanded) ...[
-              Divider(height: 24),
+              const Divider(height: 24),
               // --- IMPROVEMENT: Show nested fields recursively ---
               ..._buildDetailsList(t),
               if (imgUrl != null && imgUrl.toString().trim().isNotEmpty)
@@ -233,7 +233,7 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
                       errorBuilder: (c, e, s) => Container(
                         height: 120,
                         color: Colors.grey[200],
-                        child: Center(child: Icon(Icons.broken_image)),
+                        child: const Center(child: Icon(Icons.broken_image)),
                       ),
                     ),
                   ),
@@ -243,7 +243,7 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
                   padding: const EdgeInsets.only(top: 8.0),
                   child: SelectableText(
                     "Transaction ID: $txId",
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       color: Colors.blueGrey,
                       fontStyle: FontStyle.italic,
@@ -274,11 +274,11 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
       if (key == 'imageUrl' || value == null || (value is String && value.trim().isEmpty)) return;
       if (value is Map<String, dynamic>) {
         // Only show if at least one subfield is non-null
-        if (value.values.any((v) => v != null && (!(v is String) || v.trim().isNotEmpty))) {
+        if (value.values.any((v) => v != null && (v is! String || v.trim().isNotEmpty))) {
           widgets.add(Padding(
             padding: EdgeInsets.only(left: 8.0 * (depth + 1), top: 4, bottom: 2),
             child: Text(
-              _prettyFieldLabel(key) + ':',
+              '${_prettyFieldLabel(key)}:',
               style: TextStyle(fontWeight: FontWeight.w600, color: Colors.blueGrey[700]),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
@@ -295,7 +295,7 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  constraints: BoxConstraints(maxWidth: 90),
+                  constraints: const BoxConstraints(maxWidth: 90),
                   child: Text(
                     _prettyFieldLabel(key),
                     style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey[700]),
@@ -303,7 +303,7 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
                     maxLines: 1,
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Switch(
                   value: value,
                   onChanged: null,
@@ -321,7 +321,7 @@ class _TransactionCardWidgetState extends State<TransactionCardWidget> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _prettyFieldLabel(key) + ': ',
+                  '${_prettyFieldLabel(key)}: ',
                   style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey[700]),
                 ),
                 Expanded(child: Text("$value", style: TextStyle(color: Colors.grey[900]))),

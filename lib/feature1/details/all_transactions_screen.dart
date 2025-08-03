@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart'; 
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/backend.dart';
@@ -42,8 +41,8 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
 
     final results = await Future.wait([accountsFuture, transactionsFuture]);
 
-    final accountsSnapshot = results[0] as QuerySnapshot;
-    final transactionsSnapshot = results[1] as QuerySnapshot;
+    final accountsSnapshot = results[0];
+    final transactionsSnapshot = results[1];
 
     return {
       'accounts': accountsSnapshot.docs.map((doc) => UserAccountsRecord.fromSnapshot(doc)).toList(),
@@ -254,7 +253,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
             ),
             Text(
               NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(totalBalance),
-              style: FlutterFlowTheme.of(context).headlineSmall?.copyWith(
+              style: FlutterFlowTheme.of(context).headlineSmall.copyWith(
                 color: FlutterFlowTheme.of(context).primary,
               ),
             ),

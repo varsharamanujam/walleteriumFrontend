@@ -4,9 +4,9 @@ import 'util/firestore_util.dart';
 
 class UserAccountsRecord extends FirestoreRecord {
   UserAccountsRecord._(
-    DocumentReference reference,
-    Map<String, dynamic> data,
-  ) : super(reference, data) {
+    super.reference,
+    super.data,
+  ) {
     _initializeFields();
   }
 

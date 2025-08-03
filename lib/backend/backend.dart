@@ -4,11 +4,9 @@ import 'package:walleterium/backend/schema/wallet_user_record.dart';
 import 'package:walleterium/backend/schema/uploaded_files_record.dart';
 import '../auth/firebase_auth/auth_util.dart';
 
-import '../flutter_flow/flutter_flow_util.dart';
 import 'schema/util/firestore_util.dart';
 
 import 'schema/user_profiles_record.dart';
-import 'schema/transactions_record.dart';
 
 export 'dart:async' show StreamSubscription;
 export 'package:cloud_firestore/cloud_firestore.dart' hide Order;
@@ -183,7 +181,7 @@ Future<FFFirestorePage<T>> queryCollectionPage<T>(
   } else {
     docSnapshot = await query.get();
   }
-  final getDocs = (QuerySnapshot s) => s.docs
+  getDocs(QuerySnapshot s) => s.docs
       .map(
         (d) => safeGet(
           () => recordBuilder(d),
@@ -232,14 +230,10 @@ Future<String?> uploadFileToFirebaseStorage({
 }) async {
   try {
     final userUid = currentUserUid;
-    if (userUid == null) {
-      print('User not logged in. Cannot upload file.');
-      return null;
-    }
 
     final storageRef = FirebaseStorage.instance.ref();
     final fileExtension = filePath.split('.').last;
-    final uploadPath = '$userUid/${DateTime.now().millisecondsSinceEpoch}_${fileType}.$fileExtension';
+    final uploadPath = '$userUid/${DateTime.now().millisecondsSinceEpoch}_$fileType.$fileExtension';
     final uploadTask = storageRef.child(uploadPath).putFile(File(filePath)); //
 
     final snapshot = await uploadTask.whenComplete(() {});
@@ -258,10 +252,6 @@ Future<void> saveUploadedFileMetadata({
 }) async {
   try {
     final userUid = currentUserUid;
-    if (userUid == null) {
-      print('User not logged in. Cannot save file metadata.');
-      return;
-    }
 
     await UploadedFilesRecord.collection.add(createUploadedFilesRecordData(
       downloadUrl: downloadUrl,

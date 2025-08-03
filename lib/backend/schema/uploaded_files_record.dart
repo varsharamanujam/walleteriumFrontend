@@ -1,10 +1,6 @@
-import 'dart:async';
 import 'package:collection/collection.dart' as collection;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:walleterium/backend/schema/util/firestore_util.dart';
-import '/backend/schema/util/schema_util.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 
 class UploadedFilesRecord extends FirestoreRecord {
   UploadedFilesRecord._(

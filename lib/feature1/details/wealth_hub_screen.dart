@@ -1,7 +1,6 @@
 // In lib/details/wealth_hub_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/backend.dart';
 import '/auth/firebase_auth/auth_util.dart';
@@ -55,27 +54,27 @@ class _WealthHubScreenState extends State<WealthHubScreen> {
         future: _assetsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No assets found.'));
+            return const Center(child: Text('No assets found.'));
           }
 
           final assets = snapshot.data!;
 
           return ListView.builder(
-            padding: EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8.0),
             itemCount: assets.length,
             itemBuilder: (context, index) {
               final asset = assets[index];
               return Card(
-                margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
                 child: ListTile(
                   title: Text(asset.assetName),
                   subtitle: Text(asset.assetType),
                   trailing: Text(
                     NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(asset.currentValue),
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               );

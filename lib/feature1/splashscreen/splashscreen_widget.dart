@@ -1,22 +1,15 @@
-import '/auth/base_auth_user_provider.dart';
 import '/backend/backend.dart';
 import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'dart:async'; // Import for StreamSubscription
-import 'dart:math';
-import 'dart:ui';
 import '/index.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'splashscreen_model.dart';
 export 'splashscreen_model.dart';
-import '/auth/firebase_auth/auth_util.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:walleterium/backend/schema/wallet_user_record.dart';
 
 class SplashscreenWidget extends StatefulWidget {
   const SplashscreenWidget({super.key});
@@ -113,8 +106,8 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
             curve: Curves.easeInOut,
             delay: 0.0.ms,
             duration: 400.0.ms,
-            begin: Offset(3.0, 3.0),
-            end: Offset(1.0, 1.0),
+            begin: const Offset(3.0, 3.0),
+            end: const Offset(1.0, 1.0),
           ),
         ],
       ),
@@ -133,8 +126,8 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
             curve: Curves.bounceOut,
             delay: 300.0.ms,
             duration: 300.0.ms,
-            begin: Offset(0.6, 0.6),
-            end: Offset(1.0, 1.0),
+            begin: const Offset(0.6, 0.6),
+            end: const Offset(1.0, 1.0),
           ),
         ],
       ),
@@ -153,8 +146,8 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
             curve: Curves.easeInOut,
             delay: 350.0.ms,
             duration: 400.0.ms,
-            begin: Offset(0.0, 30.0),
-            end: Offset(0.0, 0.0),
+            begin: const Offset(0.0, 30.0),
+            end: const Offset(0.0, 0.0),
           ),
         ],
       ),
@@ -173,8 +166,8 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
             curve: Curves.easeInOut,
             delay: 400.0.ms,
             duration: 400.0.ms,
-            begin: Offset(0.0, 30.0),
-            end: Offset(0.0, 0.0),
+            begin: const Offset(0.0, 30.0),
+            end: const Offset(0.0, 0.0),
           ),
         ],
       ),
@@ -210,7 +203,7 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
               child: Container(
                 width: double.infinity,
                 height: 500.0,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Color(0xFF2A579A), Color(0xFF152C50)],
                     stops: [0.0, 0.8],
@@ -221,7 +214,7 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
                 child: Container(
                   width: 100.0,
                   height: 100.0,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       colors: [Color(0x00FFFFFF), Colors.white],
                       stops: [0.0, 1.0],
@@ -236,14 +229,14 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
                       Container(
                         width: 139.6,
                         height: 139.6,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: Color(0xCCFFFFFF),
                           shape: BoxShape.circle,
                         ),
                         child: Padding(
-                          padding: EdgeInsets.all(8.0),
+                          padding: const EdgeInsets.all(8.0),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.only(
+                            borderRadius: const BorderRadius.only(
                               bottomLeft: Radius.circular(60.0),
                               bottomRight: Radius.circular(60.0),
                               topLeft: Radius.circular(60.0),
@@ -261,7 +254,7 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
                           animationsMap['containerOnPageLoadAnimation2']!),
                       Padding(
                         padding:
-                            EdgeInsetsDirectional.fromSTEB(0.0, 44.0, 0.0, 0.0),
+                            const EdgeInsetsDirectional.fromSTEB(0.0, 44.0, 0.0, 0.0),
                         child: Text(
                           'Walleterium Imperium',
                           style: FlutterFlowTheme.of(context)
@@ -270,7 +263,7 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
                                 fontFamily: GoogleFonts.plusJakartaSans(
                                   fontWeight: FontWeight.w600,
                                 ).fontFamily,
-                                color: Color(0xFF101213),
+                                color: const Color(0xFF101213),
                                 fontSize: 30.0,
                                 letterSpacing: 0.0,
                                 fontWeight: FontWeight.w600,
@@ -279,7 +272,7 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
                             animationsMap['textOnPageLoadAnimation1']!),
                       ),
                       Padding(
-                        padding: EdgeInsetsDirectional.fromSTEB(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
                             44.0, 8.0, 44.0, 0.0),
                         child: Text(
                           'Getting things ready...',
@@ -289,7 +282,7 @@ class _SplashscreenWidgetState extends State<SplashscreenWidget>
                                     fontFamily: GoogleFonts.plusJakartaSans(
                                       fontWeight: FontWeight.w500,
                                     ).fontFamily,
-                                    color: Color(0xFF57636C),
+                                    color: const Color(0xFF57636C),
                                     fontSize: 14.0,
                                     letterSpacing: 0.0,
                                     fontWeight: FontWeight.w500,

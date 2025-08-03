@@ -3,16 +3,11 @@ import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:math';
-import 'dart:ui';
-import '/custom_code/actions/index.dart' as actions;
 import '/index.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'auth_hub_screen_model.dart';
 export 'auth_hub_screen_model.dart';
 
@@ -55,15 +50,15 @@ class _AuthHubScreenWidgetState extends State<AuthHubScreenWidget>
             curve: Curves.easeInOut,
             delay: 0.0.ms,
             duration: 400.0.ms,
-            begin: Offset(0.0, 80.0),
-            end: Offset(0.0, 0.0),
+            begin: const Offset(0.0, 80.0),
+            end: const Offset(0.0, 0.0),
           ),
           ScaleEffect(
             curve: Curves.easeInOut,
             delay: 150.0.ms,
             duration: 400.0.ms,
-            begin: Offset(0.8, 0.8),
-            end: Offset(1.0, 1.0),
+            begin: const Offset(0.8, 0.8),
+            end: const Offset(1.0, 1.0),
           ),
         ],
       ),
@@ -82,8 +77,8 @@ class _AuthHubScreenWidgetState extends State<AuthHubScreenWidget>
             curve: Curves.easeInOut,
             delay: 300.0.ms,
             duration: 400.0.ms,
-            begin: Offset(0.0, 20.0),
-            end: Offset(0.0, 0.0),
+            begin: const Offset(0.0, 20.0),
+            end: const Offset(0.0, 0.0),
           ),
         ],
       ),
@@ -116,7 +111,7 @@ class _AuthHubScreenWidgetState extends State<AuthHubScreenWidget>
               child: Container(
                 width: double.infinity,
                 height: 500.0,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Color(0xFFF5F5F5), Color(0xFF2A579A)],
                     stops: [0.0, 1.0],
@@ -129,7 +124,7 @@ class _AuthHubScreenWidgetState extends State<AuthHubScreenWidget>
                   children: [
                     Padding(
                       padding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 300.0, 0.0, 0.0),
+                          const EdgeInsetsDirectional.fromSTEB(0.0, 300.0, 0.0, 0.0),
                       child: Text(
                         'Walleterium Imperium',
                         style:
@@ -144,9 +139,9 @@ class _AuthHubScreenWidgetState extends State<AuthHubScreenWidget>
                       ),
                     ),
                     Align(
-                      alignment: AlignmentDirectional(0.0, -1.0),
+                      alignment: const AlignmentDirectional(0.0, -1.0),
                       child: Padding(
-                        padding: EdgeInsetsDirectional.fromSTEB(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
                             24.0, 70.0, 24.0, 0.0),
                         child: SingleChildScrollView(
                           child: Column(
@@ -161,12 +156,12 @@ class _AuthHubScreenWidgetState extends State<AuthHubScreenWidget>
                                 Container(
                                   width: 230.0,
                                   height: 16.0,
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     color: Colors.white,
                                   ),
                                 ),
                               Padding(
-                                padding: EdgeInsetsDirectional.fromSTEB(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
                                     70.0, 0.0, 0.0, 0.0),
                                 child: Text(
                                   'Sign in or Sign up',
@@ -184,9 +179,9 @@ class _AuthHubScreenWidgetState extends State<AuthHubScreenWidget>
                                 ),
                               ),
                               Align(
-                                alignment: AlignmentDirectional(0.0, 0.0),
+                                alignment: const AlignmentDirectional(0.0, 0.0),
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 50.0, 0.0, 0.0),
                                   child: Wrap(
                                     spacing: 16.0,
@@ -200,7 +195,7 @@ class _AuthHubScreenWidgetState extends State<AuthHubScreenWidget>
                                     clipBehavior: Clip.none,
                                     children: [
                                       Padding(
-                                        padding: EdgeInsetsDirectional.fromSTEB(
+                                        padding: const EdgeInsetsDirectional.fromSTEB(
                                             0.0, 0.0, 0.0, 16.0),
                                         child: FFButtonWidget(
                                           // --- FIX START ---
@@ -228,7 +223,7 @@ class _AuthHubScreenWidgetState extends State<AuthHubScreenWidget>
                                           },
                                           // --- FIX END ---
                                           text: 'Continue with Google',
-                                          icon: FaIcon(
+                                          icon: const FaIcon(
                                             FontAwesomeIcons.google,
                                             size: 20.0,
                                           ),
@@ -236,10 +231,10 @@ class _AuthHubScreenWidgetState extends State<AuthHubScreenWidget>
                                             width: 230.0,
                                             height: 44.0,
                                             padding:
-                                                EdgeInsetsDirectional.fromSTEB(
+                                                const EdgeInsetsDirectional.fromSTEB(
                                                     0.0, 0.0, 0.0, 0.0),
                                             iconPadding:
-                                                EdgeInsetsDirectional.fromSTEB(
+                                                const EdgeInsetsDirectional.fromSTEB(
                                                     0.0, 0.0, 0.0, 0.0),
                                             color: Colors.white,
                                             textStyle: FlutterFlowTheme.of(
@@ -250,17 +245,17 @@ class _AuthHubScreenWidgetState extends State<AuthHubScreenWidget>
                                                       .plusJakartaSans(
                                                     fontWeight: FontWeight.bold,
                                                   ).fontFamily,
-                                                  color: Color(0xFF101213),
+                                                  color: const Color(0xFF101213),
                                                   fontSize: 14.0,
                                                   letterSpacing: 0.0,
                                                 ),
                                             elevation: 0.0,
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                                 color: Color(0xFFE0E3E7),
                                                 width: 2.0),
                                             borderRadius:
                                                 BorderRadius.circular(12.0),
-                                            hoverColor: Color(0xFFF1F4F8),
+                                            hoverColor: const Color(0xFFF1F4F8),
                                           ),
                                         ),
                                       ),

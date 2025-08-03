@@ -41,9 +41,9 @@ class WalletUsersRecord extends FirestoreRecord {
 
 
   WalletUsersRecord._(
-    DocumentReference reference,
-    Map<String, dynamic> data,
-  ) : super(reference, data) {
+    super.reference,
+    super.data,
+  ) {
     _email = snapshotData['email'] as String?;
     _displayName = snapshotData['display_name'] as String?;
     _uid = snapshotData['uid'] as String?;

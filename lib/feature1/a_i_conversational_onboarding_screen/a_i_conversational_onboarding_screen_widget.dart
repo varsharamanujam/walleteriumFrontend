@@ -2,14 +2,10 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:cloud_functions/cloud_functions.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/index.dart'; // Make sure this imports MainDashWidget
 import 'a_i_conversational_onboarding_screen_model.dart';
-export 'a_i_conversational_onboarding_screen_model.dart';
-import 'message.dart';
 export 'a_i_conversational_onboarding_screen_model.dart';
 
 class AIConversationalOnboardingScreenWidget extends StatefulWidget {
@@ -37,7 +33,7 @@ class _AIConversationalOnboardingScreenWidgetState
     _model.userMessageInputTextController ??= TextEditingController();
     _model.userMessageInputFocusNode ??= FocusNode();
     // Start the conversation with an initial message
-    _callAgenticOnboarding(initialMessage: "Hello"); 
+    // _callAgenticOnboarding(initialMessage: "Hello"); // Removed initial call
   }
 
   @override
@@ -47,6 +43,16 @@ class _AIConversationalOnboardingScreenWidgetState
   }
 
   Future<void> _callAgenticOnboarding({String? initialMessage}) async {
+    /**
+     * Calls the agenticOnboarding Firebase Function to interact with the AI assistant.
+     *
+     * @param initialMessage An optional initial message to start the conversation. If null, the message from the user input is used.
+     *
+     * @return void
+     *
+     * Example:
+     * _callAgenticOnboarding(initialMessage: "Hello");
+     */
     final text = initialMessage ?? _model.userMessageInputTextController!.text;
     if (text.isEmpty) {
       return;
@@ -54,11 +60,14 @@ class _AIConversationalOnboardingScreenWidgetState
 
     final userMessage = Message(text: text, isFromUser: true);
 
+    // Check mounted state before any UI updates right at the start of async method
     if (!mounted) {
       return;
     }
     setState(() {
-      _model.conversation.add(userMessage);
+      if (initialMessage == null) {
+        _model.conversation.add(userMessage);
+      }
       _isLoading = true;
     });
 
@@ -67,62 +76,57 @@ class _AIConversationalOnboardingScreenWidgetState
     }
 
     try {
-            // Use 10.0.2.2 for Android emulator to connect to host localhost
-      final url = Uri.parse('http://10.0.2.2:8081/agenticOnboarding');
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'userId': currentUserUid ?? 'dummy_user_id',
-          'message': text,
-          'history': _model.conversation.map((m) => {
-            'text': m.text,
-            'isFromUser': m.isFromUser
-          }).toList(),
-        }),
-      );
+      final HttpsCallable callable =
+          FirebaseFunctions.instance.httpsCallable('agenticOnboarding');
+      final results = await callable.call({
+        'userId': currentUserUid ?? 'dummy_user_id',
+        'message': text,
+      });
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final aiResponse =
-            Message(text: data['response'] as String, isFromUser: false);
+      final data = results.data as Map<String, dynamic>;
+      final aiResponse =
+          Message(text: data['response'] as String, isFromUser: false);
 
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _model.conversation.add(aiResponse);
-          _isConversationDone = data['isDone'] ?? false;
-          _isLoading = false;
+      // Check mounted state before any UI updates after async call
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _model.conversation.add(aiResponse);
+        _isConversationDone = data['isDone'] ?? false;
+        _isLoading = false;
+      });
+
+      if (_isConversationDone) {
+        // Navigate to the dashboard after a short delay
+        Future.delayed(const Duration(seconds: 2), () { // Added 'const' for efficiency
+          if (mounted) {
+            // Check mounted state before using context for navigation
+            context.goNamed(MainDashWidget.routeName);
+          }
         });
-
-        if (_isConversationDone) {
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              context.goNamed(MainDashWidget.routeName);
-            }
-          });
-        }
-      } else {
-        throw Exception('Failed to load data from the server');
       }
     } catch (e) {
       print('Error calling agenticOnboarding: $e');
 
+      // !!! FIX: Add mounted check before ScaffoldMessenger.of(context) !!!
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
               content: Text(
                   'Error communicating with the assistant. Please try again.')),
         );
       }
       
+      // Check mounted state before any UI updates in catch block
       if (!mounted) {
         return;
       }
       setState(() {
         _isLoading = false;
-        _model.conversation.remove(userMessage);
+        if (initialMessage == null) {
+          _model.conversation.remove(userMessage);
+        }
       });
     }
   }
@@ -141,7 +145,15 @@ class _AIConversationalOnboardingScreenWidgetState
         // Call _callAgenticOnboarding here, after currentUserUid is available
         // This ensures the initial "Hello" is sent once the user is authenticated.
         // It should be fine as it's called in addPostFrameCallback.
-        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // You might want to ensure this 'Hello' is sent only once
+          // For example, using a flag if it's causing repeated calls
+          // or if the conversation should only start when the user is truly ready.
+          // For now, if the conversation is empty and not loading, call it.
+          if (_model.conversation.isEmpty && !_isLoading) {
+             _callAgenticOnboarding(initialMessage: "Hello");
+          }
+        });
 
         return GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
@@ -158,43 +170,43 @@ class _AIConversationalOnboardingScreenWidgetState
               child: Column(
                 children: [
                   Expanded(
-                    child: SingleChildScrollView(
-                      reverse: true,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: _model.conversation.map((message) {
-                          return ListTile(
-                            title: Align(
-                              alignment: message.isFromUser
-                                  ? Alignment.centerRight
-                                  : Alignment.centerLeft,
-                              child: Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: message.isFromUser
-                                      ? FlutterFlowTheme.of(context).primary
-                                      : FlutterFlowTheme.of(context)
-                                          .secondaryBackground,
-                                  borderRadius: BorderRadius.circular(12),
+                    child: _isLoading && _model.conversation.isEmpty
+                        ? const Center(child: CircularProgressIndicator()) // Added 'const'
+                        : ListView.builder(
+                            itemCount: _model.conversation.length,
+                            itemBuilder: (context, index) {
+                              final message = _model.conversation[index];
+                              return ListTile(
+                                title: Align(
+                                  alignment: message.isFromUser
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(10), // Added 'const'
+                                    decoration: BoxDecoration(
+                                      color: message.isFromUser
+                                          ? FlutterFlowTheme.of(context).primary
+                                          : FlutterFlowTheme.of(context)
+                                              .secondaryBackground,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      message.text,
+                                      style: FlutterFlowTheme.of(context)
+                                          .bodyMedium
+                                          .override(
+                                            fontFamily: 'Plus Jakarta Sans',
+                                            color: message.isFromUser
+                                                ? Colors.white
+                                                : FlutterFlowTheme.of(context)
+                                                    .primaryText,
+                                          ),
+                                    ),
+                                  ),
                                 ),
-                                child: Text(
-                                  message.text,
-                                  style: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        fontFamily: 'Plus Jakarta Sans',
-                                        color: message.isFromUser
-                                            ? Colors.white
-                                            : FlutterFlowTheme.of(context)
-                                                .primaryText,
-                                      ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
+                              );
+                            },
+                          ),
                   ),
                   if (_isLoading && _model.conversation.isNotEmpty)
                     const Padding( // Added 'const'

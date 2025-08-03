@@ -1,15 +1,11 @@
 // In lib/backend/schema/transactions_record.dart
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/backend.dart';
-import '/flutter_flow/flutter_flow_util.dart';
 
 class TransactionsRecord extends FirestoreRecord {
   TransactionsRecord._(
-    DocumentReference reference,
-    Map<String, dynamic> data,
-  ) : super(reference, data) {
+    super.reference,
+    super.data,
+  ) {
     _initializeFields();
   }
 
